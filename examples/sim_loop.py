@@ -1,4 +1,3 @@
-# Use sudo py-spy top --pid $(ps aux | grep python | grep -v grep | awk '{print $2, $3}' | sort -rn -k2 | head -1 | awk '{print $1}') for profiling
 import colorsys
 import numpy as np
 from pymunk import Vec2d

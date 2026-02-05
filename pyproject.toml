@@ -74,3 +74,22 @@ extend-exclude = '''
 )/
 '''
 
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["win-64"]
+
+[tool.pixi.pypi-dependencies]
+SyMBac = { path = ".", editable = true }
+
+[tool.pixi.environments]
+default = { solve-group = "default" }
+dev = { features = ["dev"], solve-group = "default" }
+
+[tool.pixi.tasks]
+
+[tool.pixi.dependencies]
+pymunk = ">=7.1.0,<8"
+ipykernel = ">=7.1.0,<8"
+pip = ">=26.0.1,<27"
+python = "3.14.*"

@@ -152,3 +152,6 @@ for_reviewers/
 
 .DS_Store
 /src/symbac/simulation/frames
+# pixi environments
+.pixi/*
+!.pixi/config.toml

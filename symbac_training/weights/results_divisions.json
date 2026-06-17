@@ -1,0 +1,133 @@
+{
+  "config": {
+    "model_path": "/Users/queralt/Desktop/HiTMic files/weights/division_classifier.pt",
+    "assignment_model": "/Users/queralt/Desktop/HiTMic files/weights/assignment_scorer.pt",
+    "max_distance": 25.0,
+    "gap_bridge_frames": 2,
+    "learned_max_cost": 0.5,
+    "split": "test",
+    "n_movies": 10
+  },
+  "aggregate": {
+    "n_gt_divisions": 2107,
+    "n_pred_divisions": 2383,
+    "tp": 803,
+    "fp": 1580,
+    "fn": 1304,
+    "precision": 0.3369702056231641,
+    "recall": 0.3811105837683911,
+    "f1": 0.3576837416481069
+  },
+  "per_movie": [
+    {
+      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_018",
+      "n_gt_divisions": 619,
+      "n_pred_divisions": 834,
+      "tp": 129,
+      "fp": 705,
+      "fn": 490,
+      "precision": 0.15467625899280577,
+      "recall": 0.2084006462035541,
+      "f1": 0.1775636613902271
+    },
+    {
+      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_021",
+      "n_gt_divisions": 72,
+      "n_pred_divisions": 56,
+      "tp": 56,
+      "fp": 0,
+      "fn": 16,
+      "precision": 1.0,
+      "recall": 0.7777777777777778,
+      "f1": 0.8750000000000001
+    },
+    {
+      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_027",
+      "n_gt_divisions": 229,
+      "n_pred_divisions": 171,
+      "tp": 165,
+      "fp": 6,
+      "fn": 64,
+      "precision": 0.9649122807017544,
+      "recall": 0.7205240174672489,
+      "f1": 0.825
+    },
+    {
+      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_033",
+      "n_gt_divisions": 379,
+      "n_pred_divisions": 316,
+      "tp": 179,
+      "fp": 137,
+      "fn": 200,
+      "precision": 0.5664556962025317,
+      "recall": 0.47229551451187335,
+      "f1": 0.5151079136690648
+    },
+    {
+      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_042",
+      "n_gt_divisions": 548,
+      "n_pred_divisions": 780,
+      "tp": 153,
+      "fp": 627,
+      "fn": 395,
+      "precision": 0.19615384615384615,
+      "recall": 0.2791970802919708,
+      "f1": 0.23042168674698793
+    },
+    {
+      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_050",
+      "n_gt_divisions": 23,
+      "n_pred_divisions": 14,
+      "tp": 12,
+      "fp": 2,
+      "fn": 11,
+      "precision": 0.8571428571428571,
+      "recall": 0.5217391304347826,
+      "f1": 0.6486486486486486
+    },
+    {
+      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_056",
+      "n_gt_divisions": 67,
+      "n_pred_divisions": 71,
+      "tp": 16,
+      "fp": 55,
+      "fn": 51,
+      "precision": 0.22535211267605634,
+      "recall": 0.23880597014925373,
+      "f1": 0.2318840579710145
+    },
+    {
+      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_059",
+      "n_gt_divisions": 40,
+      "n_pred_divisions": 39,
+      "tp": 12,
+      "fp": 27,
+      "fn": 28,
+      "precision": 0.3076923076923077,
+      "recall": 0.3,
+      "f1": 0.3037974683544304
+    },
+    {
+      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_071",
+      "n_gt_divisions": 33,
+      "n_pred_divisions": 33,
+      "tp": 13,
+      "fp": 20,
+      "fn": 20,
+      "precision": 0.3939393939393939,
+      "recall": 0.3939393939393939,
+      "f1": 0.3939393939393939
+    },
+    {
+      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_092",
+      "n_gt_divisions": 97,
+      "n_pred_divisions": 69,
+      "tp": 68,
+      "fp": 1,
+      "fn": 29,
+      "precision": 0.9855072463768116,
+      "recall": 0.7010309278350515,
+      "f1": 0.8192771084337348
+    }
+  ]
+}

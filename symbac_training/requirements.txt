@@ -1,0 +1,6 @@
+h5py>=3.8
+numpy>=1.24
+scikit-image>=0.20
+scikit-learn>=1.2
+# torch must be installed separately with the correct CUDA wheel, e.g.:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121

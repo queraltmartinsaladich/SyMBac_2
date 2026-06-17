@@ -1,0 +1,12 @@
+# Large data files — stored on cluster, not in git
+synthetic_data/
+dataset/
+
+# Logs
+logs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/

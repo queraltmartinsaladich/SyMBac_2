@@ -159,7 +159,7 @@ def train(args):
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=args.epochs)
-    criterion = nn.BCEWithLogitsLoss()
+    criterion = FocalLoss(alpha=0.75, gamma=2.0)
 
     best_val_recall = 0.0
     patience_counter = 0
@@ -230,7 +230,7 @@ def train(args):
         "feature_names": TRIPLET_FEATURE_NAMES,
         "threshold":     threshold,
         "val_metrics":   metrics,
-        "architecture":  "DivisionMLP[8→32→16→1]",
+        "architecture":  "DivisionMLP[8→64→32→16→1]",
     }, out_path)
     print(f"Saved → {out_path}")
 
@@ -246,7 +246,7 @@ def main():
     parser.add_argument("--batch_size", type=int, default=512)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--patience", type=int, default=10)
-    parser.add_argument("--min_precision", type=float, default=0.5,
+    parser.add_argument("--min_precision", type=float, default=0.60,
                         help="Minimum precision when tuning threshold (recall-priority)")
     args = parser.parse_args()
     train(args)

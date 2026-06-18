@@ -352,11 +352,23 @@ def extract_from_movie(
                     triplet_feats.append(feat)
                     triplet_labels.append(1)
 
-            # Negative triplets: random pairs of non-daughter cells at t+1
+            # Hard-negative triplets: prefer non-daughter pairs near the parent —
+            # these are the confusable cases that caused FPs in dense movies.
+            # (Random negatives are mostly far-away cells: easy for the model,
+            #  but the hard cases at inference are nearby non-daughters.)
             non_daughters = [l for l in props_t1 if l not in daughters]
+            cy_p, cx_p = rp_parent.centroid
+            nearby = [
+                l for l in non_daughters
+                if (((props_t1[l].centroid[0] - cy_p) ** 2 +
+                     (props_t1[l].centroid[1] - cx_p) ** 2) ** 0.5
+                    / stats["median_major"]) <= max_dist_norm
+            ]
+            neg_pool = nearby if len(nearby) >= 2 else non_daughters
             rng = np.random.default_rng(seed=t * 1000 + parent_label)
-            for _ in range(min(3, len(non_daughters) * (len(non_daughters) - 1) // 2)):
-                neg_pair = rng.choice(non_daughters, size=2, replace=False)
+            n_neg = min(8, len(neg_pool) * (len(neg_pool) - 1) // 2)
+            for _ in range(n_neg):
+                neg_pair = rng.choice(neg_pool, size=2, replace=False)
                 n1, n2 = int(neg_pair[0]), int(neg_pair[1])
                 feat = triplet_features(
                     rp_parent, mask_parent,

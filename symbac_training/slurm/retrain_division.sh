@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
-# SLURM job — train AssignmentMLP and DivisionMLP on sciCORE.
+# Rebuild dataset (hard-negative mining) then retrain DivisionMLP only.
+# Use this instead of train_models.sh when you only want to improve the
+# division classifier without touching the already-good AssignmentMLP.
+#
 # Submit from inside symbac_training/:
 #     cd ~/SyMBac_2/symbac_training
 #     mkdir -p logs
-#     sbatch slurm/train_symbac.sh
+#     sbatch slurm/retrain_division.sh
 
 # ── SLURM directives ───────────────────────────────────────────────────────────
-#SBATCH --job-name=symbac_train
-#SBATCH --output=logs/train_symbac.out
-#SBATCH --error=logs/train_symbac.err
+#SBATCH --job-name=retrain_div
+#SBATCH --output=logs/retrain_div.out
+#SBATCH --error=logs/retrain_div.err
 #SBATCH --time=2:00:00
-#SBATCH --mem=16G
+#SBATCH --mem=32G
 #SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:1
 #SBATCH --partition=a100
@@ -25,29 +28,25 @@ OUTPUT_DIR="${TRAINING_ROOT}/weights"
 
 set -euo pipefail
 
-mkdir -p logs "${OUTPUT_DIR}"
+mkdir -p logs "${DATASET_DIR}" "${OUTPUT_DIR}"
 
-echo "==> Node      : $(hostname)"
-echo "==> GPU       : ${CUDA_VISIBLE_DEVICES:-auto}"
-echo "==> Dataset   : ${DATASET_DIR}"
-echo "==> Output    : ${OUTPUT_DIR}"
+echo "==> Node    : $(hostname)"
+echo "==> GPU     : ${CUDA_VISIBLE_DEVICES:-auto}"
+echo "==> Dataset : ${DATASET_DIR}"
+echo "==> Output  : ${OUTPUT_DIR}"
 
 module load CUDA/12.1.0 2>/dev/null || true
 
 source "${VENV}/bin/activate"
 
 echo ""
-echo "==> Training AssignmentMLP..."
-python "${TRAINING_ROOT}/train_assignment.py" \
-    --dataset_dir "${DATASET_DIR}" \
-    --output_dir  "${OUTPUT_DIR}" \
-    --epochs 100 \
-    --batch_size 4096 \
-    --lr 1e-3 \
-    --patience 15
+echo "==> Rebuilding dataset (hard-negative mining active in feature_extraction.py)..."
+python "${TRAINING_ROOT}/build_dataset.py" \
+    --data_dir   "${TRAINING_ROOT}/synthetic_data" \
+    --output_dir "${DATASET_DIR}"
 
 echo ""
-echo "==> Training DivisionMLP..."
+echo "==> Training DivisionMLP (FocalLoss, min_precision=0.60)..."
 python "${TRAINING_ROOT}/train_division.py" \
     --dataset_dir "${DATASET_DIR}" \
     --output_dir  "${OUTPUT_DIR}" \
@@ -58,5 +57,7 @@ python "${TRAINING_ROOT}/train_division.py" \
     --min_precision 0.60
 
 echo ""
-echo "==> Both models saved to ${OUTPUT_DIR}"
-ls -lh "${OUTPUT_DIR}"
+echo "==> DivisionClassifier saved to ${OUTPUT_DIR}"
+ls -lh "${OUTPUT_DIR}/division_classifier.pt"
+echo ""
+echo "==> Done."

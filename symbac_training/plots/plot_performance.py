@@ -17,6 +17,7 @@ import argparse
 import json
 import os
 import sys
+import textwrap
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -24,6 +25,10 @@ import matplotlib.gridspec as gridspec
 import torch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+def _wrap(fig, text, chars_per_inch=9):
+    return textwrap.fill(text, width=max(40, int(fig.get_figwidth() * chars_per_inch)))
+
 
 C_TEAL   = (0,    76/255,  76/255)
 C_TEAL2  = (0,   128/255, 128/255)
@@ -118,8 +123,9 @@ def plot_tracking_comparison(baseline_path, learned_path, output_path, dpi):
         "(green = improvement, red = regression). "
         "The AssignmentScorer reduces total ID switches by ~11% with minimal impact on other metrics."
     )
-    fig.text(0.02, 0.01, caption, fontsize=7, color="#444444", style="italic",
-             va="bottom", ha="left", transform=fig.transFigure)
+    fig.text(0.02, 0.01, _wrap(fig, caption), fontsize=7, color="#444444",
+             style="italic", va="bottom", ha="left",
+             transform=fig.transFigure)
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     fig.savefig(output_path, dpi=dpi, bbox_inches="tight", facecolor=BG)
@@ -304,8 +310,9 @@ def plot_division_performance(div_path, model_path, dataset_dir, output_path, dp
         "Right: GT division count (density proxy) vs F1 — the negative correlation motivates "
         "hard-negative mining in v2 (re-sample negatives from the proximity neighbourhood of each parent)."
     )
-    fig.text(0.02, 0.01, caption, fontsize=7, color="#444444", style="italic",
-             va="bottom", ha="left", transform=fig.transFigure)
+    fig.text(0.02, 0.01, _wrap(fig, caption), fontsize=7, color="#444444",
+             style="italic", va="bottom", ha="left",
+             transform=fig.transFigure)
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     fig.savefig(output_path, dpi=dpi, bbox_inches="tight", facecolor=BG)

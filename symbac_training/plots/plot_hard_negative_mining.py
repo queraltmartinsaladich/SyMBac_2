@@ -18,6 +18,7 @@ Usage (from symbac_training/):
 import argparse
 import json
 import os
+import textwrap
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -25,6 +26,10 @@ import matplotlib.patches as mpatches
 from matplotlib.colors import hsv_to_rgb
 from skimage.measure import regionprops
 from skimage.segmentation import find_boundaries
+
+def _wrap(fig, text, chars_per_inch=9):
+    return textwrap.fill(text, width=max(40, int(fig.get_figwidth() * chars_per_inch)))
+
 
 C_TEAL   = (0,    76/255,  76/255)
 C_TEAL2  = (0,   128/255, 128/255)
@@ -269,8 +274,9 @@ def main():
         f"{args.max_dist_norm}× the median major axis of the parent (dashed circle). "
         "These nearby non-daughters are the confusable cases that caused false positives in v1 on dense movies."
     )
-    fig.text(0.02, -0.02, caption, fontsize=7, color="#444444", style="italic",
-             va="top", ha="left", transform=fig.transFigure)
+    fig.text(0.02, -0.02, _wrap(fig, caption), fontsize=7, color="#444444",
+             style="italic", va="top", ha="left",
+             transform=fig.transFigure)
 
     os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)
     fig.savefig(args.output, dpi=args.dpi, bbox_inches="tight", facecolor=BG)

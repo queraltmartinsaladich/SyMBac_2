@@ -13,6 +13,7 @@ Usage (from symbac_training/):
 import argparse
 import json
 import os
+import textwrap
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -20,6 +21,10 @@ import numpy as np
 from matplotlib.colors import hsv_to_rgb
 from skimage.measure import regionprops
 from skimage.segmentation import find_boundaries
+
+def _wrap(fig, text, chars_per_inch=9):
+    return textwrap.fill(text, width=max(40, int(fig.get_figwidth() * chars_per_inch)))
+
 
 # ── colour palette (matches LaTeX document) ───────────────────────────────────
 C_TEAL   = (0,    76/255, 76/255)
@@ -190,8 +195,8 @@ def main():
         "Divisions are ground truth by construction — the simulator generates the full lineage as part "
         "of the physics model, with no post-hoc annotation."
     )
-    fig.text(0.02, 0.01, caption, fontsize=7, color="#444444", style="italic",
-             va="bottom", ha="left", wrap=True,
+    fig.text(0.02, 0.01, _wrap(fig, caption), fontsize=7, color="#444444",
+             style="italic", va="bottom", ha="left",
              transform=fig.transFigure)
 
     fig.savefig(args.output, dpi=args.dpi, bbox_inches="tight",

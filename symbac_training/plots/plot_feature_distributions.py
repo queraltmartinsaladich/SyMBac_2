@@ -14,6 +14,7 @@ Usage (from symbac_training/):
 import argparse
 import os
 import sys
+import textwrap
 
 import h5py
 import numpy as np
@@ -22,6 +23,10 @@ from scipy.stats import gaussian_kde
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from src.feature_extraction import PAIR_FEATURE_NAMES, TRIPLET_FEATURE_NAMES
+
+def _wrap(fig, text, chars_per_inch=9):
+    return textwrap.fill(text, width=max(40, int(fig.get_figwidth() * chars_per_inch)))
+
 
 C_POS  = (0,    128/255, 128/255)   # teal — positive class
 C_NEG  = (85/255, 0,     75/255)    # purple — negative class
@@ -115,8 +120,9 @@ def make_figure(feats, labels, feature_names, title, output_path, dpi):
             "Features such as centroid_dist_norm and iou show strong separation and are the dominant "
             "predictors; the MLP combines all 10 to compute a learned assignment cost."
         )
-    fig.text(0.02, -0.01, caption, fontsize=7, color="#444444", style="italic",
-             va="top", ha="left", transform=fig.transFigure)
+    fig.text(0.02, -0.01, _wrap(fig, caption), fontsize=7, color="#444444",
+             style="italic", va="top", ha="left",
+             transform=fig.transFigure)
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     fig.savefig(output_path, dpi=dpi, bbox_inches="tight",

@@ -18,9 +18,14 @@ Usage (from symbac_training/):
 import argparse
 import json
 import os
+import textwrap
 
 import matplotlib.pyplot as plt
 import numpy as np
+
+def _wrap(fig, text, chars_per_inch=9):
+    return textwrap.fill(text, width=max(40, int(fig.get_figwidth() * chars_per_inch)))
+
 
 C_TEAL   = (0,    76/255,  76/255)
 C_TEAL2  = (0,   128/255, 128/255)
@@ -86,8 +91,9 @@ def make_figure(logs_and_meta, title, output_path, dpi, caption=""):
     fig.suptitle(title, fontsize=11, fontweight="bold", color=C_TEAL, y=0.97)
 
     if caption:
-        fig.text(0.02, 0.01, caption, fontsize=7, color="#444444", style="italic",
-                 va="bottom", ha="left", transform=fig.transFigure)
+        fig.text(0.02, 0.01, _wrap(fig, caption), fontsize=7, color="#444444",
+                 style="italic", va="bottom", ha="left",
+                 transform=fig.transFigure)
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     fig.savefig(output_path, dpi=dpi, bbox_inches="tight", facecolor=BG)

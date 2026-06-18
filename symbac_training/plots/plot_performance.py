@@ -36,7 +36,7 @@ C_PURPLE = (85/255, 0,     75/255)
 C_RED    = (200/255, 30/255, 30/255)
 C_GREEN  = (70/255, 120/255, 20/255)
 C_ORANGE = (210/255, 110/255, 0)
-BG       = "#f5f7fa"
+BG       = "white"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -63,7 +63,7 @@ def plot_tracking_comparison(baseline_path, learned_path, output_path, dpi):
 
     fig = plt.figure(figsize=(12, 4.5), facecolor=BG)
     gs  = gridspec.GridSpec(1, 3, width_ratios=[1.2, 1.8, 0.05],
-                             wspace=0.35, left=0.06, right=0.97,
+                             wspace=0.35, left=0.06, right=0.94,
                              top=0.85, bottom=0.18)
 
     # ── Aggregate metrics bar ─────────────────────────────────────────────────
@@ -123,8 +123,8 @@ def plot_tracking_comparison(baseline_path, learned_path, output_path, dpi):
         "(green = improvement, red = regression). "
         "The AssignmentScorer reduces total ID switches by ~11% with minimal impact on other metrics."
     )
-    fig.text(0.02, 0.01, _wrap(fig, caption), fontsize=7, color="#444444",
-             style="italic", va="bottom", ha="left",
+    fig.text(0.5, 0.01, _wrap(fig, caption), fontsize=7, color="#444444",
+             style="italic", va="bottom", ha="center",
              transform=fig.transFigure)
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
@@ -223,7 +223,7 @@ def plot_division_performance(div_path, model_path, dataset_dir, output_path, dp
     n_panels = 4 if (precs is not None and probs is not None) else 3
     fig = plt.figure(figsize=(15, 4.8), facecolor=BG)
     gs  = gridspec.GridSpec(1, n_panels, wspace=0.38,
-                             left=0.05, right=0.97, top=0.84, bottom=0.2)
+                             left=0.05, right=0.95, top=0.84, bottom=0.2)
 
     # ── Per-movie F1 bar ──────────────────────────────────────────────────────
     ax1 = fig.add_subplot(gs[0])
@@ -310,8 +310,8 @@ def plot_division_performance(div_path, model_path, dataset_dir, output_path, dp
         "Right: GT division count (density proxy) vs F1 — the negative correlation motivates "
         "hard-negative mining in v2 (re-sample negatives from the proximity neighbourhood of each parent)."
     )
-    fig.text(0.02, 0.01, _wrap(fig, caption), fontsize=7, color="#444444",
-             style="italic", va="bottom", ha="left",
+    fig.text(0.5, 0.01, _wrap(fig, caption), fontsize=7, color="#444444",
+             style="italic", va="bottom", ha="center",
              transform=fig.transFigure)
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)

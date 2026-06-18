@@ -141,7 +141,7 @@ def main():
         gridspec_kw={"wspace": 0.04, "hspace": 0.28,
                      "top": 0.91, "bottom": 0.10},
     )
-    fig.patch.set_facecolor("#f5f7fa")
+    fig.patch.set_facecolor("white")
 
     for row, (mdir, density_label) in enumerate(zip(picks, labels)):
         images, masks, lineage = load_movie(mdir)
@@ -195,8 +195,8 @@ def main():
         "Divisions are ground truth by construction — the simulator generates the full lineage as part "
         "of the physics model, with no post-hoc annotation."
     )
-    fig.text(0.02, 0.01, _wrap(fig, caption), fontsize=7, color="#444444",
-             style="italic", va="bottom", ha="left",
+    fig.text(0.5, 0.01, _wrap(fig, caption), fontsize=7, color="#444444",
+             style="italic", va="bottom", ha="center",
              transform=fig.transFigure)
 
     fig.savefig(args.output, dpi=args.dpi, bbox_inches="tight",

@@ -68,15 +68,16 @@ def kde_plot(ax, values_pos, values_neg, feature_name, clip_percentile=99):
         ax.spines[sp].set_visible(False)
 
 
-def make_figure(feats, labels, feature_names, title, output_path, dpi):
+def make_figure(feats, labels, feature_names, title, output_path, dpi, ncols=4):
     n = len(feature_names)
-    ncols = 4
     nrows = int(np.ceil(n / ncols))
 
     fig, axes = plt.subplots(nrows, ncols,
-                              figsize=(ncols * 3.0, nrows * 2.4),
-                              gridspec_kw={"hspace": 0.55, "wspace": 0.25})
-    fig.patch.set_facecolor("#f5f7fa")
+                              figsize=(ncols * 3.0, nrows * 2.4 + 0.5),
+                              gridspec_kw={"hspace": 0.55, "wspace": 0.25,
+                                           "left": 0.05, "right": 0.95,
+                                           "top": 0.88, "bottom": 0.14})
+    fig.patch.set_facecolor("white")
     axes_flat = axes.flat
 
     pos_mask = labels == 1
@@ -120,8 +121,8 @@ def make_figure(feats, labels, feature_names, title, output_path, dpi):
             "Features such as centroid_dist_norm and iou show strong separation and are the dominant "
             "predictors; the MLP combines all 10 to compute a learned assignment cost."
         )
-    fig.text(0.02, -0.01, _wrap(fig, caption), fontsize=7, color="#444444",
-             style="italic", va="top", ha="left",
+    fig.text(0.5, -0.01, _wrap(fig, caption), fontsize=7, color="#444444",
+             style="italic", va="top", ha="center",
              transform=fig.transFigure)
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
@@ -152,6 +153,7 @@ def main():
         "Triplet features — DivisionClassifier",
         os.path.join(args.output_dir, "feature_distributions_triplets.png"),
         args.dpi,
+        ncols=4,
     )
 
     # ── Pair features (AssignmentScorer) ──────────────────────────────────────
@@ -163,6 +165,7 @@ def main():
         "Pair features — AssignmentScorer",
         os.path.join(args.output_dir, "feature_distributions_pairs.png"),
         args.dpi,
+        ncols=5,
     )
 
 

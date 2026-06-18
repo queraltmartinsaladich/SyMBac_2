@@ -34,7 +34,7 @@ def _wrap(fig, text, chars_per_inch=9):
 C_TEAL   = (0,    76/255,  76/255)
 C_TEAL2  = (0,   128/255, 128/255)
 C_PURPLE = (85/255, 0,     75/255)
-BG       = "#f5f7fa"
+BG       = "white"
 
 C_PARENT   = "#e53935"   # red
 C_DAUGHTER = "#43a047"   # green
@@ -274,8 +274,8 @@ def main():
         f"{args.max_dist_norm}× the median major axis of the parent (dashed circle). "
         "These nearby non-daughters are the confusable cases that caused false positives in v1 on dense movies."
     )
-    fig.text(0.02, -0.02, _wrap(fig, caption), fontsize=7, color="#444444",
-             style="italic", va="top", ha="left",
+    fig.text(0.5, -0.02, _wrap(fig, caption), fontsize=7, color="#444444",
+             style="italic", va="top", ha="center",
              transform=fig.transFigure)
 
     os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)

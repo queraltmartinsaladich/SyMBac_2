@@ -31,7 +31,7 @@ C_TEAL   = (0,    76/255,  76/255)
 C_TEAL2  = (0,   128/255, 128/255)
 C_PURPLE = (85/255, 0,     75/255)
 C_ORANGE = (210/255, 110/255, 0)
-BG       = "#f5f7fa"
+BG       = "white"
 
 
 def load_log(path):
@@ -67,7 +67,7 @@ def make_figure(logs_and_meta, title, output_path, dpi, caption=""):
     """
     fig, axes = plt.subplots(1, 4, figsize=(15, 4.2),
                               gridspec_kw={"wspace": 0.32,
-                                           "left": 0.05, "right": 0.97,
+                                           "left": 0.05, "right": 0.95,
                                            "top": 0.84, "bottom": 0.20})
     fig.patch.set_facecolor(BG)
 
@@ -91,8 +91,8 @@ def make_figure(logs_and_meta, title, output_path, dpi, caption=""):
     fig.suptitle(title, fontsize=11, fontweight="bold", color=C_TEAL, y=0.97)
 
     if caption:
-        fig.text(0.02, 0.01, _wrap(fig, caption), fontsize=7, color="#444444",
-                 style="italic", va="bottom", ha="left",
+        fig.text(0.5, 0.01, _wrap(fig, caption), fontsize=7, color="#444444",
+                 style="italic", va="bottom", ha="center",
                  transform=fig.transFigure)
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)

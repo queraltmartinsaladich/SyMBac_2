@@ -182,7 +182,7 @@ def main():
 
     arrow_patch = mpatches.Patch(color=C_GOLD, label="Division event (arrow: parent→daughters)")
     fig.legend(handles=[arrow_patch], loc="lower center", fontsize=8,
-               framealpha=0.9, ncol=1, bbox_to_anchor=(0.5, 0.02))
+               framealpha=0.9, ncol=1, bbox_to_anchor=(0.5, 0.07))
 
     fig.suptitle("SyMBac² — Synthetic Training Data Examples",
                  fontsize=12, fontweight="bold", color=C_TEAL, y=0.98)

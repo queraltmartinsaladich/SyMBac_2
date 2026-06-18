@@ -78,7 +78,7 @@ def plot_tracking_comparison(baseline_path, learned_path, output_path, dpi):
     ax1.set_ylabel("Score", fontsize=9)
     ax1.set_title("Aggregate tracking metrics\n(10 test movies)", fontsize=9,
                   color=C_TEAL, fontweight="bold")
-    ax1.legend(fontsize=7.5, framealpha=0.85, loc="best")
+    ax1.legend(fontsize=6.5, framealpha=0.85, loc="upper right")
     ax1.yaxis.grid(True, alpha=0.3)
     ax1.set_facecolor(BG)
     for sp in ["top", "right"]:

@@ -56,14 +56,14 @@ def plot_one_run(axes, log, color, label_prefix, lw=1.8, ls="-"):
         ax.axvline(best_epoch, color=color, lw=0.8, ls=":", alpha=0.7)
 
 
-def make_figure(logs_and_meta, title, output_path, dpi):
+def make_figure(logs_and_meta, title, output_path, dpi, caption=""):
     """
     logs_and_meta: list of (log, color, label_prefix) tuples.
     """
-    fig, axes = plt.subplots(1, 4, figsize=(15, 3.8),
+    fig, axes = plt.subplots(1, 4, figsize=(15, 4.2),
                               gridspec_kw={"wspace": 0.32,
                                            "left": 0.05, "right": 0.97,
-                                           "top": 0.84, "bottom": 0.16})
+                                           "top": 0.84, "bottom": 0.20})
     fig.patch.set_facecolor(BG)
 
     ylabels = ["Train loss", "Val F1", "Val precision", "Val recall"]
@@ -77,13 +77,18 @@ def make_figure(logs_and_meta, title, output_path, dpi):
         ax.set_ylabel(ylabel, fontsize=9)
         if ylim:
             ax.set_ylim(*ylim)
-        ax.legend(fontsize=7.5, framealpha=0.85)
+        ax.legend(fontsize=7.5, framealpha=0.85, loc="best")
         ax.yaxis.grid(True, alpha=0.3)
         ax.set_facecolor(BG)
         for sp in ["top", "right"]:
             ax.spines[sp].set_visible(False)
 
     fig.suptitle(title, fontsize=11, fontweight="bold", color=C_TEAL, y=0.97)
+
+    if caption:
+        fig.text(0.02, 0.01, caption, fontsize=7, color="#444444", style="italic",
+                 va="bottom", ha="left", transform=fig.transFigure)
+
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     fig.savefig(output_path, dpi=dpi, bbox_inches="tight", facecolor=BG)
     print(f"Saved → {output_path}")
@@ -94,7 +99,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--weights_dir", default="weights")
     ap.add_argument("--output_dir",  default="figures")
-    ap.add_argument("--dpi",         type=int, default=150)
+    ap.add_argument("--dpi",         type=int, default=300)
     args = ap.parse_args()
 
     wdir = args.weights_dir
@@ -108,10 +113,16 @@ def main():
             "AssignmentScorer — Training Curves",
             os.path.join(odir, "training_curves_assignment.png"),
             args.dpi,
+            caption=(
+                "Epoch-level training dynamics for the AssignmentScorer (MLP, 10 pair features → assignment cost). "
+                "Vertical dotted line marks the epoch with the highest validation F1 "
+                "(the checkpoint that is saved). "
+                "Loss uses FocalLoss(α=0.25, γ=2.0); threshold is tuned post-training to maximise F1 on the validation split."
+            ),
         )
     else:
         print(f"SKIP AssignmentScorer curves: assignment_scorer_training_log.json not found in {wdir}")
-        print("  Re-run train_assignment.py with --save_log weights/assignment_scorer_training_log.json")
+        print("  Re-run train_assignment.py — log is written automatically to <output_dir>/")
 
     # ── DivisionClassifier — optionally compare v1 and v2 ────────────────────
     div_log_v1  = load_log(os.path.join(wdir, "division_classifier_training_log_v1.json"))
@@ -127,15 +138,27 @@ def main():
         title = "DivisionClassifier — Training Curves"
         if len(runs) == 2:
             title += "\n(v1 = random negatives | v2 = hard-negative mining)"
+        div_caption = (
+            "Epoch-level training dynamics for the DivisionClassifier (MLP, 8 triplet features → division probability). "
+            "Vertical dotted line marks the epoch with highest validation F1 (saved checkpoint). "
+            "Loss uses FocalLoss(α=0.75, γ=2.0) to up-weight the rare positive (division) class; "
+            "threshold is tuned post-training to maximise recall while keeping precision ≥ 0.60."
+        )
+        if len(runs) == 2:
+            div_caption += (
+                " Orange = v1 (random negatives, easy negatives dominate training). "
+                "Purple = v2 (proximity-filtered hard negatives, negatives sampled within 5× median major axis of parent)."
+            )
         make_figure(
             runs,
             title,
             os.path.join(odir, "training_curves_division.png"),
             args.dpi,
+            caption=div_caption,
         )
     else:
         print(f"SKIP DivisionClassifier curves: division_classifier_training_log.json not found in {wdir}")
-        print("  Training logs are saved automatically by train_division.py --save_log")
+        print("  Re-run train_division.py — log is written automatically to <output_dir>/")
 
     if not asgn_log and not runs:
         print("\nNo training logs found. Logs are written to weights/ at the end of each training run.")

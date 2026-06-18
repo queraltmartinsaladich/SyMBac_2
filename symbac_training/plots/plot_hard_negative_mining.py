@@ -170,7 +170,7 @@ def main():
                     help="Specific movie dir; auto-selects densest if omitted")
     ap.add_argument("--max_dist_norm", type=float, default=5.0)
     ap.add_argument("--output",        default="figures/hard_negative_mining.png")
-    ap.add_argument("--dpi",           type=int, default=150)
+    ap.add_argument("--dpi",           type=int, default=300)
     args = ap.parse_args()
 
     if args.movie_dir:
@@ -252,13 +252,25 @@ def main():
         mpatches.Patch(color=C_PROXIMITY, fill=False, label=f"Proximity threshold ({args.max_dist_norm}× median major axis)"),
     ]
     fig.legend(handles=legend_handles, loc="lower center", ncol=3,
-               fontsize=8, framealpha=0.9, bbox_to_anchor=(0.5, -0.04))
+               fontsize=8, framealpha=0.9, bbox_to_anchor=(0.5, 0.02))
 
     fig.suptitle(
         "Hard-Negative Mining — Sampling Strategy Comparison\n"
         f"({os.path.basename(movie_dir)}, {masks[t].max()} cells/frame)",
         fontsize=11, fontweight="bold", color=C_TEAL, y=1.01,
     )
+
+    caption = (
+        "Illustration of the negative-triplet sampling change introduced for DivisionClassifier v2. "
+        "A dividing parent cell (red) produces two daughters (green) one frame later. "
+        "Left (v1): 3 negatives are drawn uniformly at random from all non-daughter cells — "
+        "in a dense movie they are almost always far from the parent (low distance features), making them trivially easy for the model to reject. "
+        "Right (v2): up to 8 negatives are drawn from cells within "
+        f"{args.max_dist_norm}× the median major axis of the parent (dashed circle). "
+        "These nearby non-daughters are the confusable cases that caused false positives in v1 on dense movies."
+    )
+    fig.text(0.02, -0.02, caption, fontsize=7, color="#444444", style="italic",
+             va="top", ha="left", transform=fig.transFigure)
 
     os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)
     fig.savefig(args.output, dpi=args.dpi, bbox_inches="tight", facecolor=BG)

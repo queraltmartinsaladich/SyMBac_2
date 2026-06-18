@@ -90,7 +90,7 @@ def make_figure(feats, labels, feature_names, title, output_path, dpi):
         ax = axes_flat[i]
         kde_plot(ax, feats[pos_mask, i], feats[neg_mask, i], fname)
         if i == 0:
-            ax.legend(fontsize=6.5, framealpha=0.8)
+            ax.legend(fontsize=6.5, framealpha=0.8, loc="best")
 
     for j in range(i + 1, nrows * ncols):
         axes_flat[j].axis("off")
@@ -100,6 +100,24 @@ def make_figure(feats, labels, feature_names, title, output_path, dpi):
         f"({pos_mask.sum():,} positive  |  {neg_mask.sum():,} negative shown)",
         fontsize=10, fontweight="bold", color=(0, 76/255, 76/255), y=1.01,
     )
+
+    if "triplet" in output_path.lower() or "division" in title.lower():
+        caption = (
+            "Kernel density estimates (KDE) for the 8 triplet features used by the DivisionClassifier. "
+            "Teal = positive class (confirmed division events); purple = negative class (non-division triplets). "
+            "Negatives are subsampled to 10× the positive count for visual clarity. "
+            "Features with strong teal/purple separation carry the most discriminative information for the MLP."
+        )
+    else:
+        caption = (
+            "Kernel density estimates (KDE) for the 10 pair features used by the AssignmentScorer. "
+            "Teal = correct cell–cell links across frames; purple = incorrect links. "
+            "Features such as centroid_dist_norm and iou show strong separation and are the dominant "
+            "predictors; the MLP combines all 10 to compute a learned assignment cost."
+        )
+    fig.text(0.02, -0.01, caption, fontsize=7, color="#444444", style="italic",
+             va="top", ha="left", transform=fig.transFigure)
+
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     fig.savefig(output_path, dpi=dpi, bbox_inches="tight",
                 facecolor=fig.get_facecolor())
@@ -113,7 +131,7 @@ def main():
     ap.add_argument("--output_dir",  default="figures")
     ap.add_argument("--split",       default="train",
                     choices=["train", "val", "test"])
-    ap.add_argument("--dpi",         type=int, default=150)
+    ap.add_argument("--dpi",         type=int, default=300)
     args = ap.parse_args()
 
     h5_path = os.path.join(args.dataset_dir, f"{args.split}_assignments.h5")

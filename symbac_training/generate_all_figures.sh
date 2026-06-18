@@ -11,7 +11,7 @@ cd "$SCRIPT_DIR"
 
 source /scicore/home/boeluc00/martin0088/venv/bin/activate
 
-DPI="${DPI:-150}"
+DPI="${DPI:-300}"
 EXTRA_ARGS="$*"
 
 mkdir -p figures
@@ -31,6 +31,7 @@ python plots/plot_feature_distributions.py \
 echo "==> [3/5] Tracking + division performance"
 python plots/plot_performance.py \
     --weights_dir weights \
+    --dataset_dir dataset \
     --output_dir  figures \
     --dpi "$DPI"
 

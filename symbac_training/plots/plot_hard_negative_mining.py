@@ -46,7 +46,11 @@ def load_movie(movie_dir):
 
 
 def find_dense_division(masks, lineage, max_dist_norm=5.0):
-    """Return (t, parent_label, daughter_labels) from the densest eligible frame."""
+    """Return (t, parent_label, daughter_labels) from the densest eligible frame.
+
+    SyMBac_2 division format: one daughter keeps the parent label (self-entry at t+1),
+    the other gets a new label (non-self entry at t+1).  So daughters = [parent, new_id].
+    """
     best = None
     best_score = -1
 
@@ -55,23 +59,24 @@ def find_dense_division(masks, lineage, max_dist_norm=5.0):
         if t == 0 or t >= len(masks):
             continue
         t_prev = t - 1
-        parent_to_daughters = {}
+        # Collect new daughters (non-self entries): new_id → parent
         for d_str, p in cells.items():
             d = int(d_str)
-            if d != p:
-                parent_to_daughters.setdefault(p, []).append(d)
-        if not parent_to_daughters:
-            continue
-
-        n_cells_prev = masks[t_prev].max()
-        for parent, daughters in parent_to_daughters.items():
-            if len(daughters) < 2:
+            if d == p:
                 continue
-            # Score = cells in previous frame (prefer dense)
-            score = n_cells_prev
+            # Continuation daughter = parent label at t (it persists into t with same id)
+            # New daughter = d at t
+            # Verify both exist in their respective frames
+            if p not in np.unique(masks[t_prev]):
+                continue
+            if p not in np.unique(masks[t]):   # continuation daughter in next frame
+                continue
+            if d not in np.unique(masks[t]):   # new daughter in next frame
+                continue
+            score = masks[t_prev].max()
             if score > best_score:
                 best_score = score
-                best = (t_prev, parent, daughters[:2])
+                best = (t_prev, p, [p, d])     # parent@t_prev, daughters at t
 
     return best
 

@@ -2,6 +2,9 @@
 synthetic_data/
 dataset/
 
+# Generated figures — local only
+figures/
+
 # Logs
 logs/
 

@@ -164,6 +164,7 @@ def train(args):
     best_val_recall = 0.0
     patience_counter = 0
     best_state = None
+    training_log = []
 
     print(f"\n{'Epoch':>5}  {'Train Loss':>10}  {'Val F1':>8}  {'Val P':>8}  {'Val R':>8}")
     print("-" * 50)
@@ -199,6 +200,11 @@ def train(args):
         val_prob_max = float(val_probs.max())
         print(f"{epoch:5d}  {avg_loss:10.4f}  {val_f1:8.4f}  {val_p:8.4f}  {val_r:8.4f}"
               f"  [val_prob mean={val_prob_mean:.3f} max={val_prob_max:.3f}]")
+        training_log.append({
+            "epoch": epoch, "train_loss": round(avg_loss, 6),
+            "val_f1": round(float(val_f1), 6), "val_p": round(float(val_p), 6),
+            "val_r": round(float(val_r), 6),
+        })
 
         # Track best recall (division recall matters more than precision)
         if val_r > best_val_recall:
@@ -236,6 +242,11 @@ def train(args):
 
     with open(os.path.join(args.output_dir, "division_classifier_metrics.json"), "w") as f:
         json.dump({"threshold": threshold, **metrics}, f, indent=2)
+
+    log_path = os.path.join(args.output_dir, "division_classifier_training_log.json")
+    with open(log_path, "w") as f:
+        json.dump(training_log, f, indent=2)
+    print(f"Training log → {log_path}")
 
 
 def main():

@@ -3,16 +3,17 @@
 Build HDF5 training datasets from SyMBac_2 synthetic movies.
 
 Reads masks.npz + lineage.json from each movie folder, extracts assignment-pair
-and division-triplet features, and writes four HDF5 files:
+and division-triplet features, and writes three combined HDF5 files plus a
+split index:
 
   <output_dir>/
-    train_assignments.h5    # 80% of movies
+    train_assignments.h5    # 80% of movies — contains both pair + triplet features
     val_assignments.h5      # 10% of movies
     test_assignments.h5     # 10% of movies
-    train_divisions.h5
-    val_divisions.h5
-    test_divisions.h5
     split.json              # records which movies went to train/val/test
+
+Each HDF5 file has datasets: pair_features, pair_labels, triplet_features,
+triplet_labels (plus attrs for feature names and dims).
 
 Usage:
     python build_dataset.py --data_dir /path/to/synthetic_data \

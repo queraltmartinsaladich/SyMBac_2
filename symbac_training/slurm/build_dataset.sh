@@ -10,10 +10,12 @@
 #SBATCH --job-name=build_dataset
 #SBATCH --output=logs/build_dataset.out
 #SBATCH --error=logs/build_dataset.err
-#SBATCH --time=12:00:00
+#SBATCH --time=6:00:00
 #SBATCH --mem=64G
+#SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
-#SBATCH --partition=normal
+#SBATCH --partition=a100
+#SBATCH --qos=a100-6hours
 
 # ── CONFIG ─────────────────────────────────────────────────────────────────────
 TRAINING_ROOT="/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training"

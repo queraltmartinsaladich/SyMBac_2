@@ -1,0 +1,133 @@
+{
+  "config": {
+    "model_path": "weights/division_classifier.pt",
+    "assignment_model": null,
+    "max_distance": 25.0,
+    "gap_bridge_frames": 2,
+    "learned_max_cost": 0.5,
+    "split": "test",
+    "n_movies": 10
+  },
+  "aggregate": {
+    "n_gt_divisions": 2107,
+    "n_pred_divisions": 41875,
+    "tp": 1299,
+    "fp": 40576,
+    "fn": 808,
+    "precision": 0.03102089552238806,
+    "recall": 0.6165163739914571,
+    "f1": 0.059069619389750354
+  },
+  "per_movie": [
+    {
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_018",
+      "n_gt_divisions": 619,
+      "n_pred_divisions": 9720,
+      "tp": 297,
+      "fp": 9423,
+      "fn": 322,
+      "precision": 0.030555555555555555,
+      "recall": 0.4798061389337641,
+      "f1": 0.057452364832188796
+    },
+    {
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_021",
+      "n_gt_divisions": 72,
+      "n_pred_divisions": 1727,
+      "tp": 57,
+      "fp": 1670,
+      "fn": 15,
+      "precision": 0.033005211349160395,
+      "recall": 0.7916666666666666,
+      "f1": 0.0633685380767093
+    },
+    {
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_027",
+      "n_gt_divisions": 229,
+      "n_pred_divisions": 5992,
+      "tp": 189,
+      "fp": 5803,
+      "fn": 40,
+      "precision": 0.03154205607476635,
+      "recall": 0.8253275109170306,
+      "f1": 0.06076193538016395
+    },
+    {
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_033",
+      "n_gt_divisions": 379,
+      "n_pred_divisions": 7228,
+      "tp": 250,
+      "fp": 6978,
+      "fn": 129,
+      "precision": 0.034587714443829555,
+      "recall": 0.6596306068601583,
+      "f1": 0.06572893387669253
+    },
+    {
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_042",
+      "n_gt_divisions": 548,
+      "n_pred_divisions": 11209,
+      "tp": 330,
+      "fp": 10879,
+      "fn": 218,
+      "precision": 0.029440628066732092,
+      "recall": 0.6021897810218978,
+      "f1": 0.05613676958407757
+    },
+    {
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_050",
+      "n_gt_divisions": 23,
+      "n_pred_divisions": 586,
+      "tp": 17,
+      "fp": 569,
+      "fn": 6,
+      "precision": 0.02901023890784983,
+      "recall": 0.7391304347826086,
+      "f1": 0.055829228243021355
+    },
+    {
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_056",
+      "n_gt_divisions": 67,
+      "n_pred_divisions": 1596,
+      "tp": 34,
+      "fp": 1562,
+      "fn": 33,
+      "precision": 0.021303258145363407,
+      "recall": 0.5074626865671642,
+      "f1": 0.04088995790739627
+    },
+    {
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_059",
+      "n_gt_divisions": 40,
+      "n_pred_divisions": 1001,
+      "tp": 26,
+      "fp": 975,
+      "fn": 14,
+      "precision": 0.025974025974025976,
+      "recall": 0.65,
+      "f1": 0.04995196926032661
+    },
+    {
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_071",
+      "n_gt_divisions": 33,
+      "n_pred_divisions": 752,
+      "tp": 20,
+      "fp": 732,
+      "fn": 13,
+      "precision": 0.026595744680851064,
+      "recall": 0.6060606060606061,
+      "f1": 0.050955414012738856
+    },
+    {
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_092",
+      "n_gt_divisions": 97,
+      "n_pred_divisions": 2064,
+      "tp": 79,
+      "fp": 1985,
+      "fn": 18,
+      "precision": 0.03827519379844961,
+      "recall": 0.8144329896907216,
+      "f1": 0.07311429893567793
+    }
+  ]
+}

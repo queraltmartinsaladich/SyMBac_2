@@ -140,7 +140,7 @@ def main():
     for split, acc in accum.items():
         pf = np.concatenate(acc["pair_feats"], axis=0) if acc["pair_feats"] else np.empty((0, 10), dtype=np.float32)
         pl = np.concatenate(acc["pair_labels"], axis=0) if acc["pair_labels"] else np.empty(0, dtype=np.int8)
-        tf = np.concatenate(acc["triplet_feats"], axis=0) if acc["triplet_feats"] else np.empty((0, 8), dtype=np.float32)
+        tf = np.concatenate(acc["triplet_feats"], axis=0) if acc["triplet_feats"] else np.empty((0, len(TRIPLET_FEATURE_NAMES)), dtype=np.float32)
         tl = np.concatenate(acc["triplet_labels"], axis=0) if acc["triplet_labels"] else np.empty(0, dtype=np.int8)
 
         out_path = os.path.join(args.output_dir, f"{split}_assignments.h5")

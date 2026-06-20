@@ -236,7 +236,7 @@ def train(args):
         "feature_names": TRIPLET_FEATURE_NAMES,
         "threshold":     threshold,
         "val_metrics":   metrics,
-        "architecture":  "DivisionMLP[8→64→32→16→1]",
+        "architecture":  f"DivisionMLP[{train_feats.shape[1]}→64→32→16→1]",
     }, out_path)
     print(f"Saved → {out_path}")
 

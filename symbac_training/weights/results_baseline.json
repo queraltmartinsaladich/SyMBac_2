@@ -27,7 +27,7 @@
   },
   "per_movie": [
     {
-      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_018",
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_018",
       "n_gt_detections": 16122,
       "n_gt_tracks": 841,
       "tp_links": 14464,
@@ -46,7 +46,7 @@
       "ml_frac": 0.525564803804994
     },
     {
-      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_021",
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_021",
       "n_gt_detections": 2870,
       "n_gt_tracks": 108,
       "tp_links": 2739,
@@ -65,7 +65,7 @@
       "ml_frac": 0.2037037037037037
     },
     {
-      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_027",
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_027",
       "n_gt_detections": 8644,
       "n_gt_tracks": 264,
       "tp_links": 8245,
@@ -84,7 +84,7 @@
       "ml_frac": 0.35984848484848486
     },
     {
-      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_033",
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_033",
       "n_gt_detections": 12012,
       "n_gt_tracks": 451,
       "tp_links": 11276,
@@ -103,7 +103,7 @@
       "ml_frac": 0.44789356984478934
     },
     {
-      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_042",
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_042",
       "n_gt_detections": 16657,
       "n_gt_tracks": 722,
       "tp_links": 15281,
@@ -122,7 +122,7 @@
       "ml_frac": 0.5013850415512465
     },
     {
-      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_050",
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_050",
       "n_gt_detections": 1021,
       "n_gt_tracks": 34,
       "tp_links": 969,
@@ -141,7 +141,7 @@
       "ml_frac": 0.35294117647058826
     },
     {
-      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_056",
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_056",
       "n_gt_detections": 2743,
       "n_gt_tracks": 99,
       "tp_links": 2568,
@@ -160,7 +160,7 @@
       "ml_frac": 0.47474747474747475
     },
     {
-      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_059",
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_059",
       "n_gt_detections": 1860,
       "n_gt_tracks": 53,
       "tp_links": 1774,
@@ -179,7 +179,7 @@
       "ml_frac": 0.49056603773584906
     },
     {
-      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_071",
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_071",
       "n_gt_detections": 1293,
       "n_gt_tracks": 50,
       "tp_links": 1208,
@@ -198,7 +198,7 @@
       "ml_frac": 0.38
     },
     {
-      "movie": "/Users/queralt/Desktop/HiTMic files/synthetic_data/movie_092",
+      "movie": "/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training/synthetic_data/movie_092",
       "n_gt_detections": 3093,
       "n_gt_tracks": 114,
       "tp_links": 2912,

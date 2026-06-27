@@ -155,3 +155,7 @@ for_reviewers/
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+
+# Model weights — do not commit to git
+symbac_training/weights/*.pt
+symbac_training/weights/*.pth

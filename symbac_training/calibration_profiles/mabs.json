@@ -10,6 +10,15 @@
     "aspect_ratio_mean": 2.4748348426017697,
     "aspect_ratio_std": 0.9493204242468727
   },
+  "shape": {
+    "eccentricity_mean": 0.8607006223887603,
+    "eccentricity_std": 0.12636699859651376,
+    "solidity_mean": 0.8662298450933174,
+    "solidity_std": 0.0715769384311212,
+    "area_px_mean": 108.78284801136364,
+    "area_px_std": 60.78538233272701,
+    "note": "skimage.measure.regionprops on each single-cell polygon's own filled mask -- eccentricity=0/solidity=1 is a perfect circle; useful mainly for round cells (coc) where length/width aspect ratio alone doesn't capture non-circularity."
+  },
   "photometry": {
     "snr_db_estimate": 8.896787745045048,
     "psf_sigma_px_median": 0.041664841091551025,

@@ -10,6 +10,15 @@
     "aspect_ratio_mean": 4.073714710453882,
     "aspect_ratio_std": 2.10283751287423
   },
+  "shape": {
+    "eccentricity_mean": 0.9285525254761231,
+    "eccentricity_std": 0.08713610116273623,
+    "solidity_mean": 0.807496604128063,
+    "solidity_std": 0.1451986505395746,
+    "area_px_mean": 356.388671875,
+    "area_px_std": 358.20851665013697,
+    "note": "skimage.measure.regionprops on each single-cell polygon's own filled mask -- eccentricity=0/solidity=1 is a perfect circle; useful mainly for round cells (coc) where length/width aspect ratio alone doesn't capture non-circularity."
+  },
   "photometry": {
     "snr_db_estimate": 11.102374958581533,
     "psf_sigma_px_median": 0.06074525695761513,
@@ -17,6 +26,16 @@
     "background_mean": 0.3681566341448638,
     "background_std": 0.0949816997320849,
     "cell_mean": 0.709160015239554
+  },
+  "density": {
+    "cells_per_crop_mean": 30.39830508474576,
+    "cells_per_crop_std": 36.05131461213107
+  },
+  "orientation": {
+    "near_neighbor_angdiff_deg_mean": 38.234531563960864,
+    "random_pair_angdiff_deg_mean": 44.45765048927381,
+    "n_near_pairs": 2874,
+    "note": "Folded angular difference (axis, not vector -> [0,90deg]) between each cell's orientation and its nearest neighbor's, vs. a random other cell in the same crop as a null baseline (uniform-random orientations average ~45deg). near_neighbor close to random means growth is NOT strongly aligned into colinear chains for this species -- don't force chain alignment in generation without checking this first."
   },
   "notes": "psf_sigma is a coarse edge-spread proxy (amplitude / (p95 boundary gradient * sqrt(2*pi))), not a fitted optical model -- treat as order-of-magnitude guidance only. snr_db uses generate_dataset.py's own definition (20*log10(peak_signal/noise_std)) so it plugs directly into --species sampling ranges."
 }

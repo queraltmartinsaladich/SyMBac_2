@@ -41,11 +41,17 @@ N_DIVISIONS_WEIGHTS = {0: 0.35, 1: 0.30, 2: 0.20, 3: 0.15}   # for a division ev
 # that std directly.
 CELL_SIZE_CV = 0.10
 
-# Temporal growth parameters
-N_INITIAL_RANGE = (35, 55)          # separate singles at frame 0
-DIVISION_PROB_PER_FRAME = 0.10      # each existing cell, each frame
-NEW_SINGLES_PER_FRAME_RANGE = (1, 4)
-MAX_CELLS = 260                     # soft cap so late frames don't run away
+# Temporal growth parameters. IMPORTANT: the 512x512 frame is a CROP, not a
+# full field of view -- calibrate_from_real.py's density.cells_per_crop_mean
+# (~57.6 for coc) is the real per-crop target, not a floor to exceed. An
+# earlier version of this file grew density to an arbitrary MAX_CELLS=260
+# cap (~4.5x real) based on "looks like good progression" rather than the
+# measured target -- fixed: final-frame density now approaches the real
+# mean, not blows past it.
+N_INITIAL_RANGE = (28, 40)          # separate singles at frame 0 (~0.6x real target)
+DIVISION_PROB_PER_FRAME = 0.045     # each existing cell, each frame -- clustering forms a bit faster
+NEW_SINGLES_PER_FRAME_RANGE = (0, 1)
+MAX_CELLS = 75                      # soft safety cap, not a target -- real mean is ~57.6
 SINGLE_SEPARATION = 1.4             # singles start visibly apart, not touching (>1 = gap, in radii)
 
 

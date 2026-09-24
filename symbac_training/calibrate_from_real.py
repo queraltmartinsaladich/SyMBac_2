@@ -268,6 +268,57 @@ def load_pa_crops():
     return crops
 
 
+def _crop_alignment(single_cell_contours, shape_hw, rng):
+    """Per-crop nearest-neighbor orientation alignment: for each cell, the
+    folded angular difference (axis, not vector -> [0, pi/2]) to its nearest
+    neighbor, vs. to a random other cell in the same crop (null baseline).
+    Answers 'do real growing chains stay aligned, or is orientation closer
+    to independent per cell?' -- used to calibrate how much a new
+    daughter's orientation should correlate with its parent's."""
+    infos = []
+    for c in single_cell_contours:
+        shape = _cell_shape_stats(c, shape_hw)
+        if shape is None:
+            continue
+        x, y, w, h = cv2.boundingRect(c.astype(np.int32))
+        pad = 3
+        x0, y0 = max(0, x - pad), max(0, y - pad)
+        x1, y1 = min(shape_hw[1], x + w + pad), min(shape_hw[0], y + h + pad)
+        local_mask = np.zeros((y1 - y0, x1 - x0), dtype=np.uint8)
+        local_c = c.copy()
+        local_c[:, 0] -= x0
+        local_c[:, 1] -= y0
+        cv2.fillPoly(local_mask, [local_c.astype(np.int32)], 1)
+        props = regionprops(local_mask)
+        if not props:
+            continue
+        cy, cx = props[0].centroid
+        infos.append(((cx + x0, cy + y0), props[0].orientation, max(props[0].major_axis_length, 1.0)))
+
+    n = len(infos)
+    if n < 2:
+        return [], []
+    positions = np.array([i[0] for i in infos])
+    orients = np.array([i[1] for i in infos])
+    majors = np.array([i[2] for i in infos])
+
+    near_diffs, rand_diffs = [], []
+    for i in range(n):
+        d = np.hypot(positions[:, 0] - positions[i, 0], positions[:, 1] - positions[i, 1])
+        d[i] = np.inf
+        j = int(np.argmin(d))
+        thresh = 1.5 * (majors[i] + majors[j]) / 2.0
+        near = abs(orients[i] - orients[j])
+        near = min(near, np.pi - near)
+        if d[j] < thresh:
+            near_diffs.append(near)
+        k = int(rng.integers(0, n))
+        if k != i:
+            r = abs(orients[i] - orients[k])
+            rand_diffs.append(min(r, np.pi - r))
+    return near_diffs, rand_diffs
+
+
 # ---------------------------------------------------------------------------
 # Aggregation + profile output
 # ---------------------------------------------------------------------------
@@ -276,6 +327,9 @@ def build_profile(crops, species):
     all_lengths, all_widths = [], []
     all_eccentricities, all_solidities, all_areas = [], [], []
     bg_means, bg_stds, cell_means, sigmas = [], [], [], []
+    near_angdiffs, rand_angdiffs = [], []
+    cells_per_crop = []
+    align_rng = np.random.default_rng(0)
 
     for img, single_cell, all_contours in crops:
         stats = _crop_stats(img, single_cell, all_contours)
@@ -291,6 +345,10 @@ def build_profile(crops, species):
         cell_means.append(stats["cell_mean"])
         if stats["psf_sigma_px"] is not None:
             sigmas.append(stats["psf_sigma_px"])
+        cells_per_crop.append(len(single_cell))
+        near, rand = _crop_alignment(single_cell, img.shape, align_rng)
+        near_angdiffs.extend(near)
+        rand_angdiffs.extend(rand)
 
     if not all_lengths:
         raise RuntimeError(f"No usable single-cell annotations found for species={species}")
@@ -339,6 +397,22 @@ def build_profile(crops, species):
             "background_mean": bg_mean_overall,
             "background_std": bg_std_overall,
             "cell_mean": cell_mean_overall,
+        },
+        "density": {
+            "cells_per_crop_mean": float(np.mean(cells_per_crop)) if cells_per_crop else None,
+            "cells_per_crop_std": float(np.std(cells_per_crop)) if cells_per_crop else None,
+        },
+        "orientation": {
+            "near_neighbor_angdiff_deg_mean": float(np.degrees(np.mean(near_angdiffs))) if near_angdiffs else None,
+            "random_pair_angdiff_deg_mean": float(np.degrees(np.mean(rand_angdiffs))) if rand_angdiffs else None,
+            "n_near_pairs": len(near_angdiffs),
+            "note": ("Folded angular difference (axis, not vector -> [0,90deg]) between "
+                     "each cell's orientation and its nearest neighbor's, vs. a random "
+                     "other cell in the same crop as a null baseline (uniform-random "
+                     "orientations average ~45deg). near_neighbor close to random means "
+                     "growth is NOT strongly aligned into colinear chains for this "
+                     "species -- don't force chain alignment in generation without "
+                     "checking this first."),
         },
         "notes": (
             "psf_sigma is a coarse edge-spread proxy (amplitude / (p95 boundary "

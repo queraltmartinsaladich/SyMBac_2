@@ -150,16 +150,16 @@ def generate_movie(params: dict):
     n_initial_cells  = max(1, params.get('n_initial_cells', 1))
     warmup_steps     = params.get('warmup_steps', 30)
 
-    # --- Grid of starting positions for all initial cells ---
+    # --- Starting positions for all initial cells ---
     # Spacing: enough to avoid hard overlaps; warmup physics will separate them further
     dx = cell_diam * 2.5                       # horizontal spacing (sim units)
     dy = (start_len + cell_diam) * 1.2         # vertical spacing (sim units)
 
     if geometry == 'trench':
-        # Single column stacked upward inside the trench
+        # Single column stacked upward inside the trench (real physical confinement)
         grid_pos = [(0.0, k * dy) for k in range(n_initial_cells)]
-    else:
-        # 2-D grid centred at origin
+    elif geometry == 'box':
+        # 2-D grid centred at origin (real physical confinement -- a microfluidic box)
         n_cols = max(1, int(np.ceil(np.sqrt(n_initial_cells))))
         n_rows = int(np.ceil(n_initial_cells / n_cols))
         grid_pos = []
@@ -170,6 +170,29 @@ def generate_movie(params: dict):
                 (col - (n_cols - 1) / 2.0) * dx,
                 (row - (n_rows - 1) / 2.0) * dy,
             ))
+    else:
+        # Open field-of-view: real crops (see calibrate_from_real.py's source
+        # images) show cells scattered as separate individuals/small groups
+        # across the WHOLE frame, not one growing central microcolony -- a
+        # tight grid-at-origin seed (the old behavior here) only ever
+        # populates the canvas center. Scatter seeds across the visible
+        # canvas instead, in sim-unit coordinates (inverting the same
+        # px = ox + sx*scale, py = oy - sy*scale mapping _rasterise uses).
+        _ox, _oy = params.get('origin_px', [W // 2, H // 2])
+        _margin_px = max(0.04 * min(H, W), 1.0 * cell_len * scale)   # cell_len is in sim units -- convert to px
+        sx_lo, sx_hi = (_margin_px - _ox) / scale, (W - _margin_px - _ox) / scale
+        sy_lo, sy_hi = (_oy - (H - _margin_px)) / scale, (_oy - _margin_px) / scale
+        min_sep = dx   # reuse the old grid spacing as the minimum center-to-center separation
+
+        grid_pos = []
+        for _ in range(n_initial_cells):
+            for _attempt in range(200):
+                cand = (float(rng.uniform(sx_lo, sx_hi)), float(rng.uniform(sy_lo, sy_hi)))
+                if all(np.hypot(cand[0] - p[0], cand[1] - p[1]) > min_sep for p in grid_pos):
+                    grid_pos.append(cand)
+                    break
+            else:
+                grid_pos.append((float(rng.uniform(sx_lo, sx_hi)), float(rng.uniform(sy_lo, sy_hi))))
 
     cell_cfg = CellConfig(
         GRANULARITY           = granularity,

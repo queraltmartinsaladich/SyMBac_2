@@ -89,16 +89,24 @@ def _target_density(profile):
 
 
 def _sample_cell_ellipse(rng, shape_profile):
-    """Semi-major/minor axes (px), from real area + eccentricity."""
-    ecc = float(np.clip(rng.normal(shape_profile["eccentricity_mean"], shape_profile["eccentricity_std"]),
-                         0.0, 0.98))
-    area_mean = shape_profile["area_px_mean"]
-    area_std = area_mean * CELL_SIZE_CV
-    area = float(np.clip(rng.normal(area_mean, area_std), area_mean * 0.4, area_mean * 2.0))
-    b_over_a = np.sqrt(max(1e-6, 1.0 - ecc ** 2))
-    a = np.sqrt(area / (np.pi * b_over_a))   # semi-major
-    b = a * b_over_a                          # semi-minor
-    return a, b
+    """Semi-major/minor axes (px), sampled directly from the real measured
+    length_px/width_px (geometry section), NOT area+eccentricity. For some
+    species (PA) those two are internally inconsistent -- PA's area+
+    eccentricity implies a 35.0x13.0px cell, but the real length/width
+    measured the same way this validates against (minAreaRect) is
+    45.0x10.3px. The gap is real cells deviating from a clean ellipse (some
+    boundary irregularity/tapering minAreaRect picks up), not a bug in
+    either measurement -- driving shape from whichever target the
+    validation actually compares against avoids matching the wrong one.
+    TB's two measures happen to already agree, so this is a no-op there."""
+    length_mean, width_mean = shape_profile["length_px_mean"], shape_profile["width_px_mean"]
+    length = float(np.clip(rng.normal(length_mean, length_mean * CELL_SIZE_CV),
+                            length_mean * 0.5, length_mean * 1.8))
+    width = float(np.clip(rng.normal(width_mean, width_mean * CELL_SIZE_CV),
+                           width_mean * 0.5, width_mean * 1.8))
+    if width > length:
+        width, length = length, width
+    return length / 2.0, width / 2.0   # semi-major, semi-minor
 
 
 def _cell_radius(cell):
@@ -215,6 +223,7 @@ def render_cells(rng, cells, profile, image_size=IMAGE_SIZE):
 
 def generate_movie(rng, profile, n_frames=FRAMES_PER_MOVIE):
     shape_profile = dict(profile["shape"])
+    shape_profile.update(profile["geometry"])   # length_px_mean/width_px_mean -- see _sample_cell_ellipse
     shape_profile["_target_density"] = _target_density(profile)
     align_prob = _orientation_align_prob(profile)
 

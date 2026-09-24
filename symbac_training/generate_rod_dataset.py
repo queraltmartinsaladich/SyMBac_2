@@ -196,6 +196,32 @@ def step_population(rng, cells, image_size, shape_profile, align_prob):
     return cells
 
 
+def _draw_capsule(canvas, center, a, b, angle_deg, color):
+    """Real rods are a capsule/stadium shape (parallel sides, rounded end-
+    caps) -- NOT an ellipse, which continuously tapers and bulges in the
+    middle. cv2 has no native capsule primitive, so this composites two
+    filled circles (radius b, the half-width) at each end-cap center plus a
+    filled rotated rectangle (width 2b) connecting them, exactly matching a
+    real rod's silhouette for a given length (2a) and width (2b)."""
+    theta = np.radians(angle_deg)
+    dx, dy = np.cos(theta), np.sin(theta)
+    half_body = max(0.0, a - b)   # distance from center to each cap center
+    cx, cy = center
+    cap1 = (cx + half_body * dx, cy + half_body * dy)
+    cap2 = (cx - half_body * dx, cy - half_body * dy)
+    r = max(1, int(round(b)))
+
+    cv2.circle(canvas, (int(round(cap1[0])), int(round(cap1[1]))), r, color, -1)
+    cv2.circle(canvas, (int(round(cap2[0])), int(round(cap2[1]))), r, color, -1)
+    if half_body > 0:
+        pdx, pdy = -dy * b, dx * b   # perpendicular offset, length b
+        corners = np.array([
+            [cap1[0] + pdx, cap1[1] + pdy], [cap1[0] - pdx, cap1[1] - pdy],
+            [cap2[0] - pdx, cap2[1] - pdy], [cap2[0] + pdx, cap2[1] + pdy],
+        ], dtype=np.int32)
+        cv2.fillPoly(canvas, [corners], color)
+
+
 def render_cells(rng, cells, profile, image_size=IMAGE_SIZE):
     phot = profile["photometry"]
     psf_sigma = phot["psf_sigma_px_median"] or 1.0
@@ -207,11 +233,9 @@ def render_cells(rng, cells, profile, image_size=IMAGE_SIZE):
     for label, cell in enumerate(cells, start=1):
         px, py = cell["pos"]
         a, b = cell["axes"]
-        center = (int(round(px)), int(round(py)))
-        axes = (max(1, int(round(a))), max(1, int(round(b))))
         angle = float(cell["angle_deg"])
-        cv2.ellipse(img, center, axes, angle, 0.0, 360.0, 1.0, -1)
-        cv2.ellipse(mask, center, axes, angle, 0.0, 360.0, label, -1)
+        _draw_capsule(img, (px, py), a, b, angle, 1.0)
+        _draw_capsule(mask, (px, py), a, b, angle, int(label))
     mask = mask.astype(np.uint16)
 
     blurred = gaussian_filter(img, sigma=psf_sigma)

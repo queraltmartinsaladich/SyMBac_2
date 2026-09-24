@@ -1,0 +1,31 @@
+{
+  "species": "coc",
+  "n_crops_used": 3414,
+  "n_single_cells": 196712,
+  "geometry": {
+    "width_px_mean": 7.228482618099238,
+    "width_px_std": 1.2643100882279836,
+    "length_px_mean": 8.732133462195467,
+    "length_px_std": 4.389669742455112,
+    "aspect_ratio_mean": 1.2688090073287035,
+    "aspect_ratio_std": 0.7987529533827215
+  },
+  "shape": {
+    "eccentricity_mean": 0.42007803861575727,
+    "eccentricity_std": 0.21297067838161207,
+    "solidity_mean": 0.9336996002241099,
+    "solidity_std": 0.03181362317998701,
+    "area_px_mean": 63.402175184188984,
+    "area_px_std": 35.072525798889316,
+    "note": "skimage.measure.regionprops on each single-cell polygon's own filled mask -- eccentricity=0/solidity=1 is a perfect circle; useful mainly for round cells (coc) where length/width aspect ratio alone doesn't capture non-circularity."
+  },
+  "photometry": {
+    "snr_db_estimate": 12.01499910765682,
+    "psf_sigma_px_median": 0.08266996535531732,
+    "psf_sigma_px_n": 3414,
+    "background_mean": 0.24831633565472885,
+    "background_std": 0.061341325726248785,
+    "cell_mean": 0.492942616849806
+  },
+  "notes": "psf_sigma is a coarse edge-spread proxy (amplitude / (p95 boundary gradient * sqrt(2*pi))), not a fitted optical model -- treat as order-of-magnitude guidance only. snr_db uses generate_dataset.py's own definition (20*log10(peak_signal/noise_std)) so it plugs directly into --species sampling ranges."
+}

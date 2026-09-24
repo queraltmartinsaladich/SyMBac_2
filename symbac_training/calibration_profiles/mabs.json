@@ -1,0 +1,22 @@
+{
+  "species": "mabs",
+  "n_crops_used": 550,
+  "n_single_cells": 16896,
+  "geometry": {
+    "width_px_mean": 7.1710970875539,
+    "width_px_std": 2.878493020367162,
+    "length_px_mean": 17.039185105794758,
+    "length_px_std": 7.255795108813013,
+    "aspect_ratio_mean": 2.4748348426017697,
+    "aspect_ratio_std": 0.9493204242468727
+  },
+  "photometry": {
+    "snr_db_estimate": 8.896787745045048,
+    "psf_sigma_px_median": 0.041664841091551025,
+    "psf_sigma_px_n": 550,
+    "background_mean": 0.3107824914563786,
+    "background_std": 0.0533082300695506,
+    "cell_mean": 0.4592507623542439
+  },
+  "notes": "psf_sigma is a coarse edge-spread proxy (amplitude / (p95 boundary gradient * sqrt(2*pi))), not a fitted optical model -- treat as order-of-magnitude guidance only. snr_db uses generate_dataset.py's own definition (20*log10(peak_signal/noise_std)) so it plugs directly into --species sampling ranges."
+}

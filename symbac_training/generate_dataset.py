@@ -15,19 +15,55 @@ GEOMETRY_GROUPS = [
 ]
 
 
+def load_species_profile(species: str | None) -> dict | None:
+    """Load a calibration profile written by calibrate_from_real.py, or None
+    for the default (uncalibrated, blind-random) behavior."""
+    if species is None:
+        return None
+    profile_path = Path(__file__).parent / "calibration_profiles" / f"{species}.json"
+    with open(profile_path) as f:
+        return json.load(f)
+
+
 # ---------------------------------------------------------------------------
 # Parameter sampling
 # ---------------------------------------------------------------------------
 
-def sample_params(group_name: str, rng: np.random.Generator) -> dict:
-    """Sample random simulation parameters for a given geometry group."""
-    cell_length_mean = float(rng.uniform(80, 150))
-    cell_width_mean  = float(rng.uniform(16, 26))   # full diameter
+def sample_params(group_name: str, rng: np.random.Generator, profile: dict | None = None) -> dict:
+    """Sample random simulation parameters for a given geometry group.
+
+    If `profile` (a calibration_profiles/*.json dict) is given, geometry and
+    photometry are sampled around the real-measured distribution instead of
+    the blind default ranges -- see calibrate_from_real.py.
+    """
+    cell_width_mean  = float(rng.uniform(16, 26))   # full diameter, arbitrary sim units
     mean_div_time    = int(rng.integers(10, 31))     # faster: [10,30] frames
     n_initial_cells  = int(rng.integers(8, 26))      # pre-populate: [8,25] cells
-    psf_sigma        = float(rng.uniform(0.8, 2.5))
-    snr_db           = float(rng.uniform(15, 35))
-    pixels_per_unit  = 12.0 / cell_width_mean        # target ~12 px cell diameter
+
+    if profile is None:
+        cell_length_mean = float(rng.uniform(80, 150))
+        psf_sigma        = float(rng.uniform(0.8, 2.5))
+        snr_db           = float(rng.uniform(15, 35))
+        pixels_per_unit  = 12.0 / cell_width_mean        # target ~12 px cell diameter
+        image_size       = [256, 256]
+    else:
+        geom, phot = profile["geometry"], profile["photometry"]
+        # Only the width_px target and the length/width ratio matter for
+        # final rendered geometry -- pixels_per_unit cancels cell_width_mean
+        # out exactly (rendered_width_px = cell_width_mean * pixels_per_unit).
+        aspect_ratio = max(1.1, float(rng.normal(geom["aspect_ratio_mean"], geom["aspect_ratio_std"])))
+        cell_length_mean = cell_width_mean * aspect_ratio
+        target_width_px = max(4.0, float(rng.normal(geom["width_px_mean"], geom["width_px_std"])))
+        pixels_per_unit = target_width_px / cell_width_mean
+
+        snr_center = phot["snr_db_estimate"] if phot["snr_db_estimate"] is not None else 25.0
+        snr_db = float(rng.uniform(snr_center * 0.85, snr_center * 1.15))
+        sigma_center = phot["psf_sigma_px_median"] if phot["psf_sigma_px_median"] is not None else 1.5
+        psf_sigma = float(rng.uniform(sigma_center * 0.85, sigma_center * 1.15))
+
+        image_size = [512, 512]   # match real crop size -- see synth_to_coco.py
+
+    IW, IH = image_size
 
     base = dict(
         cell_length_mean   = cell_length_mean,
@@ -38,7 +74,7 @@ def sample_params(group_name: str, rng: np.random.Generator) -> dict:
         psf_sigma          = psf_sigma,
         snr_db             = snr_db,
         pixels_per_unit    = pixels_per_unit,
-        image_size         = [256, 256],
+        image_size         = image_size,
         granularity        = 4,
         length_variation   = float(rng.uniform(0.1, 0.3)),
         max_bend_angle     = 0.005,
@@ -53,13 +89,13 @@ def sample_params(group_name: str, rng: np.random.Generator) -> dict:
         base.update(
             geometry  = "open",
             n_frames  = int(rng.integers(40, 71)),
-            origin_px = [128, 128],
+            origin_px = [IW // 2, IH // 2],
         )
     elif group_name == "open_well_dense":
         base.update(
             geometry  = "open",
             n_frames  = int(rng.integers(70, 101)),
-            origin_px = [128, 128],
+            origin_px = [IW // 2, IH // 2],
         )
     elif group_name == "trench":
         base.update(
@@ -67,7 +103,7 @@ def sample_params(group_name: str, rng: np.random.Generator) -> dict:
             n_frames      = int(rng.integers(50, 91)),
             trench_width  = cell_width_mean * float(rng.uniform(1.3, 1.8)),
             trench_length = cell_length_mean * float(rng.uniform(4.0, 7.0)),
-            origin_px     = [128, 230],   # bottom-centre; sim y increases upward
+            origin_px     = [IW // 2, int(IH * 230 / 256)],   # bottom-centre; sim y increases upward
         )
     elif group_name == "box":
         base.update(
@@ -75,7 +111,7 @@ def sample_params(group_name: str, rng: np.random.Generator) -> dict:
             n_frames   = int(rng.integers(50, 91)),
             box_width  = cell_width_mean * float(rng.uniform(4.0, 8.0)),
             box_height = cell_length_mean * float(rng.uniform(3.0, 6.0)),
-            origin_px  = [128, 128],
+            origin_px  = [IW // 2, IH // 2],
         )
 
     return base
@@ -293,11 +329,16 @@ def main():
                         help="Total number of movies to generate (default: 100)")
     parser.add_argument("--seed",       type=int, default=42,
                         help="Master random seed (default: 42)")
+    parser.add_argument("--species",    choices=["tb", "pa", "ecoli", "mabs"], default=None,
+                        help="Calibrate geometry/photometry against a real-data "
+                             "profile from calibration_profiles/ (default: "
+                             "uncalibrated blind-random ranges)")
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     n_movies = args.n_movies
+    profile = load_species_profile(args.species)
 
     # Derive one deterministic child seed per movie, independent of n_movies,
     # so that resuming a partial run gives identical params.
@@ -311,9 +352,13 @@ def main():
         group_idx  = min(i // movies_per_group, len(GEOMETRY_GROUPS) - 1)
         group_name = GEOMETRY_GROUPS[group_idx]
         movie_rng  = np.random.default_rng(child_seeds[i])
-        p = sample_params(group_name, movie_rng)
+        p = sample_params(group_name, movie_rng, profile=profile)
         p['seed'] = int(child_seeds[i].entropy)   # store for reproducibility
         all_params.append(p)
+
+    MAX_RETRIES = 3   # a dense/small-cell packing can occasionally exceed a fixed-size
+                       # internal array in SyMBac's division_manager.py (IndexError on
+                       # _mother_septum_segments) -- resample and retry rather than abort.
 
     generation_log = {}
 
@@ -326,7 +371,24 @@ def main():
             generation_log[tag] = p
             continue
 
-        images, masks, lineage = generate_movie(p)
+        retry_seed_seq = child_seeds[i]
+        images = masks = lineage = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                images, masks, lineage = generate_movie(p)
+                break
+            except IndexError as e:
+                print(f"movie {i+1:03d}/{n_movies} attempt {attempt+1}/{MAX_RETRIES} "
+                      f"failed ({e}); resampling and retrying")
+                retry_seed_seq = retry_seed_seq.spawn(1)[0]
+                retry_rng = np.random.default_rng(retry_seed_seq)
+                p = sample_params(p['geometry_group'], retry_rng, profile=profile)
+        else:
+            print(f"movie {i+1:03d}/{n_movies} FAILED after {MAX_RETRIES} attempts "
+                  f"(geometry={p['geometry_group']}), skipping")
+            generation_log[tag] = {**p, "failed": True}
+            continue
+
         save_movie(output_dir, i, images, masks, lineage, p)
 
         cells_per_frame = [

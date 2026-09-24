@@ -1,0 +1,22 @@
+{
+  "species": "pa",
+  "n_crops_used": 118,
+  "n_single_cells": 3587,
+  "geometry": {
+    "width_px_mean": 10.294533692796747,
+    "width_px_std": 7.070870885902441,
+    "length_px_mean": 45.03575948635981,
+    "length_px_std": 38.11526466871184,
+    "aspect_ratio_mean": 4.073714710453882,
+    "aspect_ratio_std": 2.10283751287423
+  },
+  "photometry": {
+    "snr_db_estimate": 11.102374958581533,
+    "psf_sigma_px_median": 0.06074525695761513,
+    "psf_sigma_px_n": 118,
+    "background_mean": 0.3681566341448638,
+    "background_std": 0.0949816997320849,
+    "cell_mean": 0.709160015239554
+  },
+  "notes": "psf_sigma is a coarse edge-spread proxy (amplitude / (p95 boundary gradient * sqrt(2*pi))), not a fitted optical model -- treat as order-of-magnitude guidance only. snr_db uses generate_dataset.py's own definition (20*log10(peak_signal/noise_std)) so it plugs directly into --species sampling ranges."
+}

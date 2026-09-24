@@ -1,0 +1,111 @@
+# Species -> synthetic-data-augmentation engine + real calibration/merge
+# source. Mirrors the pattern HiTMicTools' own
+# src/HiTMicTools/pipelines/model_registry.yaml uses for species -> model
+# bundle: adding a species that fits an EXISTING engine should mean adding
+# an entry here, not writing new one-off scripts.
+#
+# engine:
+#   rod_physics        -> generate_dataset.py --species <name> (SyMBac's
+#                          pymunk physics sim: elongation + lengthwise
+#                          division). Real morphologies only.
+#   coccus_procedural   -> generate_coc_dataset.py (no physics -- recursive
+#                          tangent-division cluster placement + temporal
+#                          growth. Built for coc; the only other morphology
+#                          this project might need it for is any other
+#                          non-rod species, none currently).
+#
+# calibration_profile: written by calibrate_from_real.py --species <name>,
+# consumed by the engine above via generate_dataset.py's --species flag or
+# generate_coc_dataset.py's load_profile().
+#
+# real_source.type:
+#   mtb_crops     -> per-crop *_coco.json + tiff dir (calibrate_from_real.py's
+#                    load_tb_crops style)
+#   pa_merge      -> multi-source merge via a dedicated loader
+#                    (build_pa_standardized_dataset.py's load_ibs/load_e013_tiled)
+#   generic_coco  -> one merged COCO json + flat images dir
+#                    (calibrate_from_real.py's load_generic_coco_crops)
+#
+# status:
+#   validated          -> fine-tune ablation run, real val improvement confirmed
+#   in_progress         -> fine-tune ablation running/queued, no confirmed result yet
+#   generated_not_validated -> synthetic data generated + visually QA'd, no
+#                          fine-tune ablation run yet
+
+species:
+  tb:
+    engine: rod_physics
+    real_source:
+      type: mtb_crops
+      root: /scicore/home/boeluc00/martin0088/data/bacdetr_mtb
+      val_start_frame: 24
+    calibration_profile: calibration_profiles/tb.json
+    real_train_count: 2400
+    merge_script: ../../prep_training/build_annotations_mtb.py   # --extra_crop_dir, --ann_tag
+    status: validated
+    note: "0x/1x/2x ablation (capped below the original 3x target -- full-scale
+      generation ran ~12min/movie, not the ~15s/movie a small smoke test
+      suggested). See diaries/ for the fine-tune result."
+
+  pa:
+    engine: rod_physics
+    real_source:
+      type: pa_merge
+      loader: ../../prep_training/build_pa_standardized_dataset.py
+    calibration_profile: calibration_profiles/pa.json
+    real_train_count: 138
+    merge_script: ../../prep_training/build_pa_standardized_dataset.py   # --synthetic_dir
+    status: validated
+    note: "0x/1x/3x ablation, checkpoint instSegRod.zip (not the registry's
+      instSegPaerug.zip -- see model_registry.yaml discrepancy, not reconciled).
+      Aggregate val_map climbs 0.5518->0.5766->0.6211, but the per-class
+      breakdown shows the gain is mostly debris (n=22 val instances, noisy);
+      single-cell peaks at 1x and dips slightly at 3x. PA val set has zero
+      clump ground truth -- untested."
+
+  ecoli:
+    engine: rod_physics
+    real_source:
+      type: generic_coco
+      root: /scicore/home/boeluc00/martin0088/data/bacdetr_rod_nafnet_only_perspecies
+      train_ann: instances_train_3class_ecoli_ibsonly.json
+      val_ann: instances_val_3class_ecoli_ibsonly.json
+    calibration_profile: calibration_profiles/ecoli.json
+    real_train_count: 635
+    merge_script: build_rod_synthaug.py
+    status: in_progress
+    note: "Real data already 'sufficient' per the project's own fine-tune
+      data audit -- 1x only, no 2x/3x arm. 0x/1x aggregate val_map essentially
+      flat (0.4716 -> 0.4735)."
+
+  mabs:
+    engine: rod_physics
+    real_source:
+      type: generic_coco
+      root: /scicore/home/boeluc00/martin0088/data/bacdetr_rod_nafnet_only_perspecies
+      train_ann: instances_train_2class_m_abscessus.json
+      val_ann: instances_val_2class_m_abscessus.json
+    calibration_profile: calibration_profiles/mabs.json
+    real_train_count: 699
+    merge_script: build_rod_synthaug.py
+    status: in_progress
+    note: "Same rationale as ecoli -- 1x only."
+
+  coc:
+    engine: coccus_procedural
+    real_source:
+      type: generic_coco
+      root: /scicore/home/boeluc00/martin0088/data/bacdetr_coc_merged
+      train_ann: instances_train_coc_3class.json
+      val_ann: instances_val_coc_3class.json
+    calibration_profile: calibration_profiles/coc.json
+    real_train_count: null   # not yet computed against a real-data merge target
+    merge_script: null       # no merge script built yet -- generation only so far
+    status: generated_not_validated
+    note: "SyMBac's rod-physics engine cannot represent coccoid growth/division
+      (elongation + lengthwise split only) -- generate_coc_dataset.py is a
+      separate procedural engine: recursive tangent-division cluster
+      placement, calibrated against real eccentricity/solidity/area
+      (skimage regionprops), with temporal growth (movies start as scattered
+      singles, cells divide in place over frames). Visually QA'd against real
+      calibration stats -- no fine-tune ablation run yet."

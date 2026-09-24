@@ -1,0 +1,22 @@
+{
+  "species": "ecoli",
+  "n_crops_used": 529,
+  "n_single_cells": 24935,
+  "geometry": {
+    "width_px_mean": 9.762334050430859,
+    "width_px_std": 3.9687760644493872,
+    "length_px_mean": 26.729255416657658,
+    "length_px_std": 17.654580225193627,
+    "aspect_ratio_mean": 2.803838217256165,
+    "aspect_ratio_std": 1.3430031983080593
+  },
+  "photometry": {
+    "snr_db_estimate": 8.841294214640698,
+    "psf_sigma_px_median": 0.051433333007224136,
+    "psf_sigma_px_n": 529,
+    "background_mean": 0.29142256759966256,
+    "background_std": 0.046772404389001696,
+    "cell_mean": 0.4208583659113918
+  },
+  "notes": "psf_sigma is a coarse edge-spread proxy (amplitude / (p95 boundary gradient * sqrt(2*pi))), not a fitted optical model -- treat as order-of-magnitude guidance only. snr_db uses generate_dataset.py's own definition (20*log10(peak_signal/noise_std)) so it plugs directly into --species sampling ranges."
+}

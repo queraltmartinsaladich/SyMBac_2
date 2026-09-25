@@ -58,7 +58,9 @@ SEPARATION = 1.4          # fresh singles placed with an explicit gap (>1 = gap,
 # images -- reverted back to matching the real target.
 # Lower than before now that init_population already starts near the real
 # target -- only mild further drift needed, not another 1.7x growth arc.
-DIVISION_PROB_PER_FRAME = 0.01
+# Trimmed again per feedback that the final frame still ran slightly denser
+# than real (e.g. PA t=19 34 cells vs 30.4 target, TB 51 vs 44.4).
+DIVISION_PROB_PER_FRAME = 0.005
 NEW_SINGLES_PER_FRAME_RANGE = (0, 1)
 MAX_CELLS = 300
 
@@ -88,25 +90,46 @@ def _target_density(profile):
     return float(mean) if mean else 40.0
 
 
+def _solve_capsule_halfwidth(a, area):
+    """Given a capsule's half-length a and target fill area, solve for the
+    half-width b such that 4*b*(a-b) + pi*b^2 == area exactly (the real
+    capsule area formula: a rectangle of width 2b, length 2(a-b), plus a
+    full circle of radius b from the two end-caps)."""
+    A, B, C = (np.pi - 4.0), 4.0 * a, -area
+    roots = np.roots([A, B, C])
+    valid = [r.real for r in roots if abs(r.imag) < 1e-6 and 0 < r.real <= a]
+    if valid:
+        return min(valid)
+    return max(1.0, area / (4.0 * a))   # fallback: rectangle-dominated approximation
+
+
 def _sample_cell_ellipse(rng, shape_profile):
-    """Semi-major/minor axes (px), sampled directly from the real measured
-    length_px/width_px (geometry section), NOT area+eccentricity. For some
-    species (PA) those two are internally inconsistent -- PA's area+
-    eccentricity implies a 35.0x13.0px cell, but the real length/width
-    measured the same way this validates against (minAreaRect) is
-    45.0x10.3px. The gap is real cells deviating from a clean ellipse (some
-    boundary irregularity/tapering minAreaRect picks up), not a bug in
-    either measurement -- driving shape from whichever target the
-    validation actually compares against avoids matching the wrong one.
-    TB's two measures happen to already agree, so this is a no-op there."""
-    length_mean, width_mean = shape_profile["length_px_mean"], shape_profile["width_px_mean"]
+    """Semi-major/minor axes (px). Length is sampled directly from the real
+    measured length_px (geometry section) -- more reliable than width_px
+    alone, since for some species (PA) width_px and area_px/eccentricity
+    imply different cell sizes (real cells deviate from a clean geometric
+    model enough that not all measured stats agree simultaneously). Width
+    is then DERIVED by solving for the half-width that makes this cell's
+    capsule area match the real area_px target exactly, rather than
+    independently sampling width_px_mean and letting area fall out however
+    it lands (that was overshooting real area by ~14-28% after switching
+    from ellipses to capsules -- capsules have strictly more area than an
+    ellipse at the same length/width, so matching length+width exactly no
+    longer means matching area)."""
+    length_mean, area_mean = shape_profile["length_px_mean"], shape_profile["area_px_mean"]
+    width_mean = shape_profile["width_px_mean"]
     length = float(np.clip(rng.normal(length_mean, length_mean * CELL_SIZE_CV),
                             length_mean * 0.5, length_mean * 1.8))
-    width = float(np.clip(rng.normal(width_mean, width_mean * CELL_SIZE_CV),
-                           width_mean * 0.5, width_mean * 1.8))
-    if width > length:
-        width, length = length, width
-    return length / 2.0, width / 2.0   # semi-major, semi-minor
+    area = float(np.clip(rng.normal(area_mean, area_mean * CELL_SIZE_CV),
+                          area_mean * 0.5, area_mean * 1.5))
+    a = length / 2.0
+    b_from_area = _solve_capsule_halfwidth(a, area)
+    # Blend toward the directly-measured width_px too: b_from_area alone
+    # slightly undershoots real width (small-capsule rasterization measures
+    # ~9-12% more area than the continuous formula predicts, so solving
+    # purely for area pulls b down further than warranted).
+    b = min(0.6 * b_from_area + 0.4 * (width_mean / 2.0), a)
+    return a, b   # semi-major, semi-minor
 
 
 def _cell_radius(cell):

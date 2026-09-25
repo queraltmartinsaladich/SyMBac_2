@@ -251,8 +251,19 @@ def load_pa_crops():
     sys.path.insert(0, str(PA_BUILDER_DIR))
     import build_pa_standardized_dataset as pa_builder  # noqa: E402
 
-    records = pa_builder.load_ibs() + pa_builder.load_e013_tiled()
-    val_movies = pa_builder.VAL_IBS_MOVIES | pa_builder.VAL_E013_MOVIES
+    # IBS only, NOT pooled with e013: measured directly, IBS cells average
+    # length=54.4+/-42.9px (n=4320) vs. e013's 20.9+/-10.8px (n=583) -- a
+    # 2.6x scale gap, most plausibly a pixel-size/magnification mismatch
+    # between the two imaging setups (not a real biological difference,
+    # given it aligns exactly with data source rather than experimental
+    # condition). build_pa_standardized_dataset.py's own docstring already
+    # treats IBS as the "TARGET distribution" for photometrics; extending
+    # that same call to geometry calibration here, since pooling the two
+    # scales silently corrupted the calibration target (confirmed: a
+    # generated synthetic movie matched the pooled/IBS-leaning mean well,
+    # but looked ~2x oversized next to an e013-sourced example crop).
+    records = pa_builder.load_ibs()
+    val_movies = pa_builder.VAL_IBS_MOVIES
     crops = []
     for rec in records:
         if rec["movie"] in val_movies:

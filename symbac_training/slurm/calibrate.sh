@@ -18,8 +18,8 @@ set -euo pipefail
 
 SPECIES="${1:?Usage: sbatch calibrate.sh SPECIES}"
 
-VENV="/scicore/home/boeluc00/martin0088/venv"
-TRAINING_ROOT="/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training"
+VENV="$HOME/venv"
+TRAINING_ROOT="$HOME/SyMBac_2/symbac_training"
 
 mkdir -p logs
 source "${VENV}/bin/activate"

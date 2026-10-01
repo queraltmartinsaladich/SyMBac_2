@@ -19,9 +19,9 @@ set -euo pipefail
 SPECIES="${1:?Usage: sbatch check_rod_procedural.sh SPECIES POOL_DIR}"
 POOL_DIR="${2:?Usage: sbatch check_rod_procedural.sh SPECIES POOL_DIR}"
 
-VENV="/scicore/home/boeluc00/martin0088/venv"
-TRAINING_ROOT="/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training"
-OUTPUT_DIR="/scicore/home/boeluc00/martin0088/data/rod_procedural_check_${SPECIES}"
+VENV="$HOME/venv"
+TRAINING_ROOT="$HOME/SyMBac_2/symbac_training"
+OUTPUT_DIR="$HOME/data/rod_procedural_check_${SPECIES}"
 
 mkdir -p logs
 source "${VENV}/bin/activate"

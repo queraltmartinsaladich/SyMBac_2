@@ -4,10 +4,11 @@ cell size scales, or whether pooling them is averaging over two genuinely
 different physical scales -- would explain why a single real crop can look
 nothing like the pooled calibration average."""
 import sys
+from pathlib import Path
 import numpy as np
 import cv2
 
-sys.path.insert(0, "/scicore/home/boeluc00/martin0088/prep_training")
+sys.path.insert(0, str(Path.home() / "prep_training"))
 import build_pa_standardized_dataset as pa_builder
 
 

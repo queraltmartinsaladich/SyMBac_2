@@ -17,9 +17,9 @@ set -euo pipefail
 
 POOL_DIR="${1:?Usage: sbatch check_coc_procedural.sh POOL_DIR}"
 
-VENV="/scicore/home/boeluc00/martin0088/venv"
-TRAINING_ROOT="/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training"
-OUTPUT_DIR="/scicore/home/boeluc00/martin0088/data/coc_procedural_check"
+VENV="$HOME/venv"
+TRAINING_ROOT="$HOME/SyMBac_2/symbac_training"
+OUTPUT_DIR="$HOME/data/coc_procedural_check"
 
 mkdir -p logs
 source "${VENV}/bin/activate"

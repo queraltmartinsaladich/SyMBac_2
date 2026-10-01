@@ -21,9 +21,9 @@ SPECIES="${1:?Usage: sbatch generate_rod_dataset.sh SPECIES N_MOVIES OUTPUT_TAG}
 N_MOVIES="${2:?Usage: sbatch generate_rod_dataset.sh SPECIES N_MOVIES OUTPUT_TAG}"
 OUTPUT_TAG="${3:?Usage: sbatch generate_rod_dataset.sh SPECIES N_MOVIES OUTPUT_TAG}"
 
-VENV="/scicore/home/boeluc00/martin0088/venv"
-TRAINING_ROOT="/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training"
-OUTPUT_DIR="/scicore/home/boeluc00/martin0088/data/synth_${SPECIES}_${OUTPUT_TAG}"
+VENV="$HOME/venv"
+TRAINING_ROOT="$HOME/SyMBac_2/symbac_training"
+OUTPUT_DIR="$HOME/data/synth_${SPECIES}_${OUTPUT_TAG}"
 
 mkdir -p logs "${OUTPUT_DIR}"
 source "${VENV}/bin/activate"

@@ -17,8 +17,8 @@
 #SBATCH --qos=a100-6hours
 
 # ── CONFIG ─────────────────────────────────────────────────────────────────────
-TRAINING_ROOT="/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training"
-VENV="/scicore/home/boeluc00/martin0088/venv"
+TRAINING_ROOT="$HOME/SyMBac_2/symbac_training"
+VENV="$HOME/venv"
 DATASET_DIR="${TRAINING_ROOT}/dataset"
 OUTPUT_DIR="${TRAINING_ROOT}/weights"
 # ── END CONFIG ─────────────────────────────────────────────────────────────────

@@ -9,7 +9,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-source /scicore/home/boeluc00/martin0088/venv/bin/activate
+source $HOME/venv/bin/activate
 
 DPI="${DPI:-300}"
 EXTRA_ARGS="$*"

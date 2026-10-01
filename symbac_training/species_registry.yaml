@@ -37,7 +37,7 @@ species:
     engine: rod_physics
     real_source:
       type: mtb_crops
-      root: /scicore/home/boeluc00/martin0088/data/bacdetr_mtb
+      root: ~/data/bacdetr_mtb
       val_start_frame: 24
     calibration_profile: calibration_profiles/tb.json
     real_train_count: 2400
@@ -67,7 +67,7 @@ species:
     engine: rod_physics
     real_source:
       type: generic_coco
-      root: /scicore/home/boeluc00/martin0088/data/bacdetr_rod_nafnet_only_perspecies
+      root: ~/data/bacdetr_rod_nafnet_only_perspecies
       train_ann: instances_train_3class_ecoli_ibsonly.json
       val_ann: instances_val_3class_ecoli_ibsonly.json
     calibration_profile: calibration_profiles/ecoli.json
@@ -82,7 +82,7 @@ species:
     engine: rod_physics
     real_source:
       type: generic_coco
-      root: /scicore/home/boeluc00/martin0088/data/bacdetr_rod_nafnet_only_perspecies
+      root: ~/data/bacdetr_rod_nafnet_only_perspecies
       train_ann: instances_train_2class_m_abscessus.json
       val_ann: instances_val_2class_m_abscessus.json
     calibration_profile: calibration_profiles/mabs.json
@@ -95,7 +95,7 @@ species:
     engine: coccus_procedural
     real_source:
       type: generic_coco
-      root: /scicore/home/boeluc00/martin0088/data/bacdetr_coc_merged
+      root: ~/data/bacdetr_coc_merged
       train_ann: instances_train_coc_3class.json
       val_ann: instances_val_coc_3class.json
     calibration_profile: calibration_profiles/coc.json

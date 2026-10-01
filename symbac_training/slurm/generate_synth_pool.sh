@@ -43,9 +43,9 @@ case "$SPECIES" in
   *) echo "Unknown species: $SPECIES (expected tb, pa, ecoli, or mabs)"; exit 1 ;;
 esac
 
-VENV="/scicore/home/boeluc00/martin0088/venv"
-TRAINING_ROOT="/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training"
-OUTPUT_DIR="/scicore/home/boeluc00/martin0088/data/synth_${SPECIES}_pool"
+VENV="$HOME/venv"
+TRAINING_ROOT="$HOME/SyMBac_2/symbac_training"
+OUTPUT_DIR="$HOME/data/synth_${SPECIES}_pool"
 
 mkdir -p logs "${OUTPUT_DIR}"
 source "${VENV}/bin/activate"

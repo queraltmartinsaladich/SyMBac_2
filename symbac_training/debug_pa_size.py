@@ -7,12 +7,13 @@ the first attempt used axis-aligned boundingRect, which for a rotated
 capsule gives neither the true length nor width).
 """
 import json
+from pathlib import Path
 import numpy as np
 import cv2
 
-ANN_PATH = "/scicore/home/boeluc00/martin0088/data/pa_standardized/annotations/instances_train_3class.json"
+ANN_PATH = str(Path.home() / "data/pa_standardized/annotations/instances_train_3class.json")
 TARGET_FILE = "AMK_PAO1_O23_p05_t00_crop_r000_c000.tiff"
-SYNTH_DIR = "/scicore/home/boeluc00/martin0088/data/synth_pa_procedural_v1/movie_000"
+SYNTH_DIR = str(Path.home() / "data/synth_pa_procedural_v1/movie_000")
 
 print("=== REAL (from GT annotation polygons) ===")
 with open(ANN_PATH) as f:

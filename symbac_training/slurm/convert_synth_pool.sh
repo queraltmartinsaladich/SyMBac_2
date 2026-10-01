@@ -26,10 +26,10 @@ case "$SPECIES" in
   *) echo "Unknown species: $SPECIES (expected tb, pa, ecoli, or mabs)"; exit 1 ;;
 esac
 
-VENV="/scicore/home/boeluc00/martin0088/venv"
-TRAINING_ROOT="/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training"
-MOVIES_DIR="/scicore/home/boeluc00/martin0088/data/synth_${SPECIES}_pool"
-OUTPUT_DIR="/scicore/home/boeluc00/martin0088/data/synth_${SPECIES}_coco"
+VENV="$HOME/venv"
+TRAINING_ROOT="$HOME/SyMBac_2/symbac_training"
+MOVIES_DIR="$HOME/data/synth_${SPECIES}_pool"
+OUTPUT_DIR="$HOME/data/synth_${SPECIES}_coco"
 
 mkdir -p logs
 source "${VENV}/bin/activate"

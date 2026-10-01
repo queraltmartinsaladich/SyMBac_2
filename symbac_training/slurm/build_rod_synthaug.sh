@@ -33,12 +33,12 @@ case "$SPECIES" in
   *) echo "Unknown species: $SPECIES (expected ecoli or mabs)"; exit 1 ;;
 esac
 
-VENV="/scicore/home/boeluc00/martin0088/venv"
-SYMBAC_ROOT="/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training"
-REAL_ROOT="/scicore/home/boeluc00/martin0088/data/bacdetr_rod_nafnet_only_perspecies"
-SYNTH_COCO="/scicore/home/boeluc00/martin0088/data/synth_${SPECIES}_coco"
-SUBSET_DIR="/scicore/home/boeluc00/martin0088/data/synth_${SPECIES}_coco_synth1x_subset"
-OUTPUT_DIR="/scicore/home/boeluc00/martin0088/data/${SPECIES}_synthaug_1x"
+VENV="$HOME/venv"
+SYMBAC_ROOT="$HOME/SyMBac_2/symbac_training"
+REAL_ROOT="$HOME/data/bacdetr_rod_nafnet_only_perspecies"
+SYNTH_COCO="$HOME/data/synth_${SPECIES}_coco"
+SUBSET_DIR="$HOME/data/synth_${SPECIES}_coco_synth1x_subset"
+OUTPUT_DIR="$HOME/data/${SPECIES}_synthaug_1x"
 
 source "${VENV}/bin/activate"
 cd "${SYMBAC_ROOT}"

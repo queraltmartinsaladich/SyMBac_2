@@ -9,6 +9,6 @@
 #SBATCH --qos=30min
 
 set -euo pipefail
-source /scicore/home/boeluc00/martin0088/venv/bin/activate
-cd /scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training
+source $HOME/venv/bin/activate
+cd $HOME/SyMBac_2/symbac_training
 python -u debug_pa_size.py

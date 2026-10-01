@@ -31,8 +31,8 @@ from skimage.measure import regionprops
 
 SINGLE_CELL_CAT_ID = 1  # consistent across mtb 3-class and rod_3class schemes
 
-MTB_ROOT = Path("/scicore/home/boeluc00/martin0088/data/bacdetr_mtb")
-PA_BUILDER_DIR = Path("/scicore/home/boeluc00/martin0088/prep_training")
+MTB_ROOT = Path.home() / "data/bacdetr_mtb"
+PA_BUILDER_DIR = Path.home() / "prep_training"
 
 
 # ---------------------------------------------------------------------------
@@ -204,8 +204,8 @@ def load_tb_crops(val_start_frame=24):
 # opposed to TB's per-crop-json layout or PA's own multi-source merge)
 # ---------------------------------------------------------------------------
 
-ROD_PERSPECIES_ROOT = Path("/scicore/home/boeluc00/martin0088/data/bacdetr_rod_nafnet_only_perspecies")
-COC_MERGED_ROOT = Path("/scicore/home/boeluc00/martin0088/data/bacdetr_coc_merged")
+ROD_PERSPECIES_ROOT = Path.home() / "data/bacdetr_rod_nafnet_only_perspecies"
+COC_MERGED_ROOT = Path.home() / "data/bacdetr_coc_merged"
 GENERIC_SPECIES_ROOT = {
     "ecoli": ROD_PERSPECIES_ROOT,
     "mabs":  ROD_PERSPECIES_ROOT,

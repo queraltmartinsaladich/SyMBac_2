@@ -19,9 +19,9 @@ set -euo pipefail
 N_MOVIES="${1:?Usage: sbatch generate_coc_dataset.sh N_MOVIES OUTPUT_TAG}"
 OUTPUT_TAG="${2:?Usage: sbatch generate_coc_dataset.sh N_MOVIES OUTPUT_TAG}"
 
-VENV="/scicore/home/boeluc00/martin0088/venv"
-TRAINING_ROOT="/scicore/home/boeluc00/martin0088/SyMBac_2/symbac_training"
-OUTPUT_DIR="/scicore/home/boeluc00/martin0088/data/synth_coc_${OUTPUT_TAG}"
+VENV="$HOME/venv"
+TRAINING_ROOT="$HOME/SyMBac_2/symbac_training"
+OUTPUT_DIR="$HOME/data/synth_coc_${OUTPUT_TAG}"
 
 mkdir -p logs "${OUTPUT_DIR}"
 source "${VENV}/bin/activate"

@@ -64,6 +64,76 @@ DIVISION_PROB_PER_FRAME = 0.005
 NEW_SINGLES_PER_FRAME_RANGE = (0, 1)
 MAX_CELLS = 300
 
+# _sample_cell_ellipse's area-solve/direct-width blend systematically
+# overshoots width for some species (measured on check_rod_procedural.py
+# output, e.g. ecoli: synth width_px_mean=11.48 vs real=9.76, ~118%).
+# Per-species multiplier applied to the derived half-width as a direct,
+# measured correction rather than re-deriving the blend formula per
+# species. 1.0 = no correction (TB/PA/mabs untouched, not yet audited
+# for the same overshoot).
+SPECIES_WIDTH_SCALE = {
+    "ecoli": 0.72,   # feedback: synthetic cells read as much too thick --
+                      # corrects the ~18% mean overshoot and lands visibly
+                      # thinner than the real mean, not just at parity with it
+}
+
+# Explicit request to shrink cells well below the real calibration target
+# (not a correction -- a deliberate departure from it), applied uniformly
+# to both length and width on top of any SPECIES_WIDTH_SCALE correction
+# above. 1.0 = no shrink.
+SPECIES_SIZE_SCALE = {
+    "ecoli": 2.0 / 3.0,   # reduce both width and length by 1/3
+    "pa":    2.0 / 3.0,   # reduce both width and length by 1/3
+}
+
+# Species using patchy (Gaussian-cluster) spatial placement instead of
+# uniform-random -- feedback that PA isn't spatially even, some regions
+# sparse, others tightly packed with cells close together. Off by default
+# (uniform placement) for species not listed.
+SPECIES_CLUSTERED_PLACEMENT = {"pa"}
+
+# Looser minimum-gap requirement for species using clustered placement, so
+# cells inside a dense cluster can actually sit close together rather than
+# being spread out by the same gap enforced everywhere. Falls back to the
+# global SEPARATION for species not listed.
+SPECIES_SEPARATION = {"pa": 1.05}
+
+# Per-species (area_weight, width_weight) blend for _sample_cell_ellipse's
+# derived half-width. Species not listed keep the original 0.6/0.4 default.
+# TB/mabs have no deliberate size override (unlike PA/ecoli's intentional
+# shrink), so they're set to sample width directly for a tight match to the
+# real calibration mean instead of letting the area-solve pull it down.
+SPECIES_WIDTH_BLEND = {
+    "tb":   (0.0, 1.0),
+    "mabs": (0.0, 1.0),
+}
+
+# Feedback: PA and E. coli rods aren't always straight -- some visibly bow
+# along their length -- and length was too uniform cell-to-cell. Both
+# enabled together for these two species only (not TB/mabs/coc, not
+# reported as an issue there).
+SPECIES_CURVATURE = {"pa", "ecoli"}
+SPECIES_REAL_LENGTH_STD = {"pa", "ecoli"}
+
+# Per-species multipliers on the base curvature/length-std magnitude below.
+# Follow-up feedback: PA specifically should curve MORE but vary LESS in
+# size than the initial pass (which used the same amount of each for both
+# species) -- E. coli's amounts are left at the original 1.0 baseline.
+SPECIES_CURVATURE_SCALE = {"pa": 1.8}
+SPECIES_LENGTH_STD_SCALE = {"pa": 0.5}
+
+
+def _sample_curvature_deg(rng, scale=1.0):
+    """Most rods render nearly straight; a minority bow noticeably --
+    right-skewed (exponential) magnitude capped at a visibly-curved but not
+    coiled maximum, random bend direction. scale multiplies both the
+    typical magnitude and the cap together (a species curving "more"
+    should see both a higher average bend and a higher ceiling, not just
+    one or the other)."""
+    bend = min(float(rng.exponential(scale=6.0 * scale)), 35.0 * scale)
+    sign = 1.0 if rng.uniform() < 0.5 else -1.0
+    return sign * bend
+
 
 def load_profile(species):
     profile_path = Path(__file__).parent / "calibration_profiles" / f"{species}.json"
@@ -118,8 +188,21 @@ def _sample_cell_ellipse(rng, shape_profile):
     longer means matching area)."""
     length_mean, area_mean = shape_profile["length_px_mean"], shape_profile["area_px_mean"]
     width_mean = shape_profile["width_px_mean"]
-    length = float(np.clip(rng.normal(length_mean, length_mean * CELL_SIZE_CV),
-                            length_mean * 0.5, length_mean * 1.8))
+    # Length jitter: default is a tight generic CV (CELL_SIZE_CV) around the
+    # mean. Species in SPECIES_REAL_LENGTH_STD instead use the real
+    # calibrated length_px_std directly -- feedback that cells all looked
+    # the same length, which the tight generic CV was doing by construction;
+    # real PA/ecoli length_px_std is 66-83% of the mean (not 15%), so this
+    # is a real, measured amount of variability, not an exaggeration. Wider
+    # clip bounds (mean +/- 3 real std) since the old (0.5, 1.8)*mean bounds
+    # would clip most of that wider distribution away.
+    if shape_profile.get("_use_real_length_std") and shape_profile.get("length_px_std"):
+        length_std = shape_profile["length_px_std"] * shape_profile.get("_length_std_scale", 1.0)
+        length = float(np.clip(rng.normal(length_mean, length_std),
+                                max(1.0, length_mean - 3 * length_std), length_mean + 3 * length_std))
+    else:
+        length = float(np.clip(rng.normal(length_mean, length_mean * CELL_SIZE_CV),
+                                length_mean * 0.5, length_mean * 1.8))
     area = float(np.clip(rng.normal(area_mean, area_mean * CELL_SIZE_CV),
                           area_mean * 0.5, area_mean * 1.5))
     a = length / 2.0
@@ -127,9 +210,113 @@ def _sample_cell_ellipse(rng, shape_profile):
     # Blend toward the directly-measured width_px too: b_from_area alone
     # slightly undershoots real width (small-capsule rasterization measures
     # ~9-12% more area than the continuous formula predicts, so solving
-    # purely for area pulls b down further than warranted).
-    b = min(0.6 * b_from_area + 0.4 * (width_mean / 2.0), a)
+    # purely for area pulls b down further than warranted). Blend weight is
+    # per-species tunable (area_weight, width_weight) -- default keeps the
+    # original 0.6/0.4 split; species targeting a tight (~2%) width/length
+    # match set this closer to (0, 1) to sample width directly, accepting
+    # area/solidity drift as the cost (capsules structurally hold more area
+    # than a real cell at matched length+width -- can't hit all of
+    # length+width+area+solidity at once with one shape family).
+    area_w, width_w = shape_profile.get("_width_blend", (0.6, 0.4))
+    b = min(area_w * b_from_area + width_w * (width_mean / 2.0), a)
+    b *= shape_profile.get("_width_scale", 1.0)
+    size_scale = shape_profile.get("_size_scale", 1.0)
+    a *= size_scale
+    b *= size_scale
+    # Rasterization measurement bias correction (see _calibrate_rasterization_bias):
+    # a small filled capsule's contour, measured back via cv2.minAreaRect the
+    # same way both check_rod_procedural.py and the real-data calibration do,
+    # systematically reads ~10% wider and ~7% shorter than the (a, b) actually
+    # used to draw it -- a pixel-discretization artifact of drawing/rasterizing
+    # small shapes, not a sampling error. Dividing by the measured bias here
+    # pre-compensates so the MEASURED output matches the intended target.
+    a /= shape_profile.get("_length_bias_correction", 1.0)
+    b /= shape_profile.get("_width_bias_correction", 1.0)
     return a, b   # semi-major, semi-minor
+
+
+def _calibrate_rasterization_bias(rng, shape_profile, n_probe=60, n_measure=80, n_iters=4):
+    """Empirically measures how much cv2.minAreaRect over/under-reads this
+    species' typical capsule size once rasterized, by drawing and measuring
+    test capsules at the species' own representative (a, b) across random
+    angles -- self-calibrating rather than a hardcoded per-species constant,
+    consistent with this project's calibrate-from-real-data approach.
+
+    The length and width biases aren't independent: correcting b shifts the
+    a/b ratio, which shifts the length bias too (and vice versa), so a
+    single measurement at the UNcorrected (a, b) doesn't land on a
+    self-consistent answer once both corrections are applied together
+    (confirmed empirically -- one-shot correction left length ~7% short).
+    Fixed-point iterate instead: measure bias at the current best-guess
+    corrected (a, b), set the correction to that measured bias, repeat --
+    converges in a few rounds since the coupling is a small effect."""
+    curved = bool(shape_profile.get("_curvature_enabled"))
+    length_corr, width_corr = 1.0, 1.0
+    for _ in range(n_iters):
+        probe_profile = dict(shape_profile)
+        probe_profile["_length_bias_correction"] = length_corr
+        probe_profile["_width_bias_correction"] = width_corr
+
+        if curved:
+            # Curvature reduces the minAreaRect-measured length relative to
+            # the true arc length (a bowed rod's bounding box is shorter
+            # than its straight arc), and varies per cell -- like coc's
+            # near-circular shapes, a single representative-size probe point
+            # doesn't represent the population average here. Measure over
+            # the actual sampled (a, b, curvature) population directly.
+            len_meas, wid_meas, a_used, b_used = [], [], [], []
+            for _ in range(n_measure):
+                a, b = _sample_cell_ellipse(rng, probe_profile)
+                curvature = _sample_curvature_deg(rng, scale=shape_profile.get("_curvature_scale", 1.0))
+                angle = rng.uniform(0, 180)
+                canvas_size = int(4 * a) + 40
+                canvas = np.zeros((canvas_size, canvas_size), dtype=np.int32)
+                c = canvas_size / 2.0
+                _draw_curved_rod(canvas, (c, c), a, b, angle, curvature, 1)
+                cm = (canvas == 1).astype(np.uint8)
+                cnts, _ = cv2.findContours(cm, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                if not cnts:
+                    continue
+                contour = max(cnts, key=cv2.contourArea)
+                (_, _), (w, h), _ = cv2.minAreaRect(contour)
+                len_meas.append(max(w, h))
+                wid_meas.append(min(w, h))
+                a_used.append(a)
+                b_used.append(b)
+            length_corr = float(np.mean(len_meas)) / (2.0 * np.mean(a_used)) if len_meas else length_corr
+            width_corr = float(np.mean(wid_meas)) / (2.0 * np.mean(b_used)) if wid_meas else width_corr
+            continue
+
+        a_list, b_list = [], []
+        for _ in range(n_probe):
+            a, b = _sample_cell_ellipse(rng, probe_profile)
+            a_list.append(a)
+            b_list.append(b)
+        a_mean, b_mean = float(np.mean(a_list)), float(np.mean(b_list))
+
+        canvas_size = int(4 * a_mean) + 40
+        len_meas, wid_meas = [], []
+        for _ in range(n_measure):
+            angle = rng.uniform(0, 180)
+            canvas = np.zeros((canvas_size, canvas_size), dtype=np.int32)
+            c = canvas_size / 2.0
+            _draw_capsule(canvas, (c, c), a_mean, b_mean, angle, 1)
+            cm = (canvas == 1).astype(np.uint8)
+            cnts, _ = cv2.findContours(cm, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            if not cnts:
+                continue
+            contour = max(cnts, key=cv2.contourArea)
+            (_, _), (w, h), _ = cv2.minAreaRect(contour)
+            len_meas.append(max(w, h))
+            wid_meas.append(min(w, h))
+
+        # measured/(2*mean) is the bias AT this corrected operating point --
+        # since rendered_a = target_a / length_corr, wanting
+        # measured_length == target_length works out to length_corr should
+        # equal this ratio exactly (not compound with the previous value).
+        length_corr = float(np.mean(len_meas)) / (2.0 * a_mean) if len_meas else length_corr
+        width_corr = float(np.mean(wid_meas)) / (2.0 * b_mean) if wid_meas else width_corr
+    return length_corr, width_corr
 
 
 def _cell_radius(cell):
@@ -138,7 +325,9 @@ def _cell_radius(cell):
 
 def _new_cell(rng, shape_profile, pos, orientation_deg):
     a, b = _sample_cell_ellipse(rng, shape_profile)
-    return {"pos": pos, "axes": (a, b), "angle_deg": float(orientation_deg)}
+    curvature = (_sample_curvature_deg(rng, scale=shape_profile.get("_curvature_scale", 1.0))
+                 if shape_profile.get("_curvature_enabled") else 0.0)
+    return {"pos": pos, "axes": (a, b), "angle_deg": float(orientation_deg), "curvature_deg": curvature}
 
 
 def _sample_new_orientation(rng, parent_angle_deg, align_prob):
@@ -147,12 +336,49 @@ def _sample_new_orientation(rng, parent_angle_deg, align_prob):
     return float(rng.uniform(0, 180))                         # independent
 
 
+def _make_density_field(rng, image_size, n_clusters_range=(3, 6), sigma_range=(60, 140), floor=0.15, grid_res=64):
+    """Coarse spatial density field (sum of a few Gaussian blobs, normalized
+    to [floor, 1]) used to bias where new cells land -- real PA crops show
+    patchy density (some regions sparse, others tightly packed), not the
+    spatially-uniform placement a plain rng.uniform(0, image_size) gives.
+    floor keeps sparse regions non-empty rather than completely excluded."""
+    xs = np.linspace(0, image_size, grid_res)
+    ys = np.linspace(0, image_size, grid_res)
+    X, Y = np.meshgrid(xs, ys)
+    field = np.zeros_like(X)
+    for _ in range(int(rng.integers(*n_clusters_range))):
+        cx, cy = rng.uniform(0, image_size, size=2)
+        sigma = rng.uniform(*sigma_range)
+        field += np.exp(-((X - cx) ** 2 + (Y - cy) ** 2) / (2.0 * sigma ** 2))
+    field = field / field.max()
+    field = floor + (1.0 - floor) * field
+    return field, grid_res
+
+
+def _sample_density_position(rng, density_field, image_size, r_new):
+    """Grid-cell-weighted sample from a density field, then uniform jitter
+    within the chosen cell -- clusters candidate positions in high-density
+    regions while still covering the whole canvas."""
+    field, grid_res = density_field
+    flat = field.ravel()
+    idx = rng.choice(flat.size, p=flat / flat.sum())
+    gy, gx = divmod(idx, grid_res)
+    cell_w = image_size / grid_res
+    x = np.clip(rng.uniform(gx * cell_w, (gx + 1) * cell_w), r_new, image_size - r_new)
+    y = np.clip(rng.uniform(gy * cell_w, (gy + 1) * cell_w), r_new, image_size - r_new)
+    return float(x), float(y)
+
+
 def _place_free(rng, image_size, shape_profile, existing_cells, sep_factor, max_attempts=150):
     candidate = _new_cell(rng, shape_profile, (0.0, 0.0), rng.uniform(0, 180))
     r_new = _cell_radius(candidate)
+    density_field = shape_profile.get("_density_field")
     for _ in range(max_attempts):
-        x = rng.uniform(r_new, image_size - r_new)
-        y = rng.uniform(r_new, image_size - r_new)
+        if density_field is not None:
+            x, y = _sample_density_position(rng, density_field, image_size, r_new)
+        else:
+            x = rng.uniform(r_new, image_size - r_new)
+            y = rng.uniform(r_new, image_size - r_new)
         ok = all(
             np.hypot(x - c["pos"][0], y - c["pos"][1]) > sep_factor * (r_new + _cell_radius(c))
             for c in existing_cells
@@ -175,10 +401,13 @@ def _divide_cell(rng, cell, shape_profile, align_prob):
 
     out = []
     for (a, b), sign, r_self in zip(daughters_shape, (1.0, -1.0), radii):
+        curvature = (_sample_curvature_deg(rng, scale=shape_profile.get("_curvature_scale", 1.0))
+                     if shape_profile.get("_curvature_enabled") else 0.0)
         out.append({
             "pos": (cell["pos"][0] + sign * r_self * dir_x, cell["pos"][1] + sign * r_self * dir_y),
             "axes": (a, b),
             "angle_deg": new_angle_deg,
+            "curvature_deg": curvature,
         })
     return out
 
@@ -192,7 +421,7 @@ def init_population(rng, image_size, shape_profile):
     n_initial = max(4, int(rng.integers(int(target * 0.95), int(target * 1.05) + 1)))
     cells = []
     for _ in range(n_initial):
-        c = _place_free(rng, image_size, shape_profile, cells, SEPARATION)
+        c = _place_free(rng, image_size, shape_profile, cells, shape_profile.get("_separation", SEPARATION))
         if c is not None:
             cells.append(c)
     return cells
@@ -213,19 +442,28 @@ def step_population(rng, cells, image_size, shape_profile, align_prob):
         for _ in range(n_new):
             if len(cells) >= MAX_CELLS:
                 break
-            c = _place_free(rng, image_size, shape_profile, cells, SEPARATION)
+            c = _place_free(rng, image_size, shape_profile, cells, shape_profile.get("_separation", SEPARATION))
             if c is not None:
                 cells.append(c)
     return cells
 
 
-def _draw_capsule(canvas, center, a, b, angle_deg, color):
+def _draw_capsule(canvas, center, a, b, angle_deg, color, rim_color=None):
     """Real rods are a capsule/stadium shape (parallel sides, rounded end-
     caps) -- NOT an ellipse, which continuously tapers and bulges in the
     middle. cv2 has no native capsule primitive, so this composites two
     filled circles (radius b, the half-width) at each end-cap center plus a
     filled rotated rectangle (width 2b) connecting them, exactly matching a
-    real rod's silhouette for a given length (2a) and width (2b)."""
+    real rod's silhouette for a given length (2a) and width (2b).
+
+    Optional rim_color draws a thin bright outline along the capsule
+    perimeter after the fill -- real phase-contrast/brightfield crops carry
+    a bright edge halo (measured directly: real cell-interior pixels span
+    up to the 99th percentile well above the mean interior fill value used
+    for `color`, an effect a uniform-fill capsule can't produce on its own).
+    Without it, synthetic frames only match real ones under independent
+    per-image contrast stretching -- under a shared, real-anchored display
+    window they read as much flatter/lower-contrast than real crops."""
     theta = np.radians(angle_deg)
     dx, dy = np.cos(theta), np.sin(theta)
     half_body = max(0.0, a - b)   # distance from center to each cap center
@@ -233,9 +471,12 @@ def _draw_capsule(canvas, center, a, b, angle_deg, color):
     cap1 = (cx + half_body * dx, cy + half_body * dy)
     cap2 = (cx - half_body * dx, cy - half_body * dy)
     r = max(1, int(round(b)))
+    cap1_i = (int(round(cap1[0])), int(round(cap1[1])))
+    cap2_i = (int(round(cap2[0])), int(round(cap2[1])))
 
-    cv2.circle(canvas, (int(round(cap1[0])), int(round(cap1[1]))), r, color, -1)
-    cv2.circle(canvas, (int(round(cap2[0])), int(round(cap2[1]))), r, color, -1)
+    cv2.circle(canvas, cap1_i, r, color, -1)
+    cv2.circle(canvas, cap2_i, r, color, -1)
+    corners = None
     if half_body > 0:
         pdx, pdy = -dy * b, dx * b   # perpendicular offset, length b
         corners = np.array([
@@ -244,27 +485,81 @@ def _draw_capsule(canvas, center, a, b, angle_deg, color):
         ], dtype=np.int32)
         cv2.fillPoly(canvas, [corners], color)
 
+    if rim_color is not None:
+        cv2.circle(canvas, cap1_i, r, rim_color, 1)
+        cv2.circle(canvas, cap2_i, r, rim_color, 1)
+        if corners is not None:
+            cv2.polylines(canvas, [corners], isClosed=True, color=rim_color, thickness=1)
+
+
+def _draw_curved_rod(canvas, center, a, b, angle_deg, curvature_deg, color, rim_color=None):
+    """Real rods (PA/E. coli especially, per feedback) aren't always
+    perfectly straight -- some visibly bow along their length. Models the
+    centerline as a circular arc of length 2a bent through curvature_deg
+    total, then stamps overlapping filled circles of radius b along it
+    (spacing < b so they merge into one continuous curved body) -- there's
+    no cv2 primitive for a bent capsule, so this is the same "build it from
+    circles" idea as the straight capsule's end-caps, just applied along
+    the whole centerline instead of only at the two ends."""
+    if abs(curvature_deg) < 1e-3:
+        return _draw_capsule(canvas, center, a, b, angle_deg, color, rim_color=rim_color)
+
+    theta_total = np.radians(curvature_deg)
+    length = 2.0 * a
+    radius = length / abs(theta_total)
+    n_steps = max(8, int(np.ceil(length / max(1.0, b * 0.4))))
+    s_vals = np.linspace(-a, a, n_steps)
+    sign = 1.0 if theta_total >= 0 else -1.0
+    phi = (s_vals / radius) * sign
+    local_x = radius * np.sin(phi)
+    local_y = radius * (1.0 - np.cos(phi)) * sign
+
+    theta = np.radians(angle_deg)
+    cosA, sinA = np.cos(theta), np.sin(theta)
+    cx, cy = center
+    r = max(1, int(round(b)))
+    pts = []
+    for lx, ly in zip(local_x, local_y):
+        rx, ry = lx * cosA - ly * sinA, lx * sinA + ly * cosA
+        pts.append((int(round(cx + rx)), int(round(cy + ry))))
+
+    for p in pts:
+        cv2.circle(canvas, p, r, color, -1)
+    if rim_color is not None:
+        for p in pts:
+            cv2.circle(canvas, p, r, rim_color, 1)
+
+
+RIM_BOOST_SIGMA = 4.0   # rim brightness = cell_mean + this many background_std above fill
 
 def render_cells(rng, cells, profile, image_size=IMAGE_SIZE):
     phot = profile["photometry"]
     psf_sigma = phot["psf_sigma_px_median"] or 1.0
-    snr_db = phot["snr_db_estimate"] if phot["snr_db_estimate"] is not None else 20.0
+    background_mean = phot.get("background_mean", 0.1)
+    background_std = phot.get("background_std", 0.02)
+    cell_mean = phot.get("cell_mean", 1.0)
+    rim_color = float(np.clip(cell_mean + RIM_BOOST_SIGMA * background_std, 0.0, 1.0))
 
-    img = np.zeros((image_size, image_size), dtype=np.float32)
+    # Real crops are phase-contrast/brightfield: a mid-intensity, low-contrast
+    # background with cells only slightly brighter (or darker) than it -- NOT
+    # a black/fluorescence-style field with cells at full white. Rendering on
+    # a zero background with color=1.0 cells made every synthetic frame look
+    # like a different imaging modality entirely (near-binary black/white
+    # speckle) regardless of how well cell geometry was calibrated.
+    img = np.full((image_size, image_size), background_mean, dtype=np.float32)
     mask = np.zeros((image_size, image_size), dtype=np.int32)
 
     for label, cell in enumerate(cells, start=1):
         px, py = cell["pos"]
         a, b = cell["axes"]
         angle = float(cell["angle_deg"])
-        _draw_capsule(img, (px, py), a, b, angle, 1.0)
-        _draw_capsule(mask, (px, py), a, b, angle, int(label))
+        curvature = float(cell.get("curvature_deg", 0.0))
+        _draw_curved_rod(img, (px, py), a, b, angle, curvature, cell_mean, rim_color=rim_color)
+        _draw_curved_rod(mask, (px, py), a, b, angle, curvature, int(label))
     mask = mask.astype(np.uint16)
 
     blurred = gaussian_filter(img, sigma=psf_sigma)
-    peak = blurred.max() if blurred.max() > 0.0 else 1.0
-    noise_std = peak / (10.0 ** (snr_db / 20.0))
-    noisy = blurred + rng.normal(0.0, noise_std, (image_size, image_size)).astype(np.float32)
+    noisy = blurred + rng.normal(0.0, background_std, (image_size, image_size)).astype(np.float32)
     return np.clip(noisy, 0.0, 1.0), mask
 
 
@@ -272,6 +567,18 @@ def generate_movie(rng, profile, n_frames=FRAMES_PER_MOVIE):
     shape_profile = dict(profile["shape"])
     shape_profile.update(profile["geometry"])   # length_px_mean/width_px_mean -- see _sample_cell_ellipse
     shape_profile["_target_density"] = _target_density(profile)
+    shape_profile["_width_scale"] = SPECIES_WIDTH_SCALE.get(profile.get("species"), 1.0)
+    shape_profile["_size_scale"] = SPECIES_SIZE_SCALE.get(profile.get("species"), 1.0)
+    shape_profile["_separation"] = SPECIES_SEPARATION.get(profile.get("species"), SEPARATION)
+    shape_profile["_width_blend"] = SPECIES_WIDTH_BLEND.get(profile.get("species"), (0.6, 0.4))
+    shape_profile["_curvature_enabled"] = profile.get("species") in SPECIES_CURVATURE
+    shape_profile["_use_real_length_std"] = profile.get("species") in SPECIES_REAL_LENGTH_STD
+    shape_profile["_curvature_scale"] = SPECIES_CURVATURE_SCALE.get(profile.get("species"), 1.0)
+    shape_profile["_length_std_scale"] = SPECIES_LENGTH_STD_SCALE.get(profile.get("species"), 1.0)
+    shape_profile["_length_bias_correction"], shape_profile["_width_bias_correction"] = \
+        _calibrate_rasterization_bias(rng, shape_profile)
+    if profile.get("species") in SPECIES_CLUSTERED_PLACEMENT:
+        shape_profile["_density_field"] = _make_density_field(rng, IMAGE_SIZE)
     align_prob = _orientation_align_prob(profile)
 
     images = np.zeros((n_frames, IMAGE_SIZE, IMAGE_SIZE), dtype=np.float32)

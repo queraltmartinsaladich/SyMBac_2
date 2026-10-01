@@ -62,19 +62,76 @@ def load_profile(species="coc"):
 
 
 def _sample_cell_ellipse(rng, shape_profile):
-    """Semi-major/minor axes (px), from real area + eccentricity
-    distributions (calibrate_from_real.py's regionprops-based "shape"
-    section) -- real cocci average eccentricity~0.42 (mildly elongated,
-    not a perfect circle) and this drives area = pi*a*b directly."""
-    ecc = float(np.clip(rng.normal(shape_profile["eccentricity_mean"], shape_profile["eccentricity_std"]),
-                         0.0, 0.85))
-    area_mean = shape_profile["area_px_mean"]
-    area_std = area_mean * CELL_SIZE_CV   # see CELL_SIZE_CV -- real cocci are size-uniform
-    area = float(np.clip(rng.normal(area_mean, area_std), area_mean * 0.7, area_mean * 1.3))
-    b_over_a = np.sqrt(max(1e-6, 1.0 - ecc ** 2))
-    a = np.sqrt(area / (np.pi * b_over_a))   # semi-major
-    b = a * b_over_a                          # semi-minor
+    """Semi-major/minor axes (px). Previously derived from real area +
+    eccentricity (area = pi*a*b) -- switched to sampling length_px/width_px
+    directly (same approach as generate_rod_dataset.py's rod species)
+    because the area+eccentricity route doesn't reproduce the real
+    calibration's own width/length means: even before any rasterization,
+    that formula averaged ~10-16% over real length_px_mean/width_px_mean
+    (real cocci deviate from a clean geometric model enough that area,
+    eccentricity, and width/length don't all agree simultaneously -- same
+    issue documented for PA elsewhere in this project). Sampling length and
+    width directly targets the stat that actually gets measured and
+    compared against real data."""
+    length_mean = shape_profile["length_px_mean"]
+    width_mean = shape_profile["width_px_mean"]
+    length = float(np.clip(rng.normal(length_mean, length_mean * CELL_SIZE_CV),
+                            length_mean * 0.7, length_mean * 1.3))
+    width = float(np.clip(rng.normal(width_mean, width_mean * CELL_SIZE_CV),
+                           width_mean * 0.7, width_mean * 1.3))
+    width = min(width, length)   # semi-minor can't exceed semi-major
+    a, b = length / 2.0, width / 2.0
+    # Rasterization measurement bias correction -- see generate_rod_dataset.py's
+    # _calibrate_rasterization_bias for the full rationale: a small ellipse
+    # drawn with cv2.ellipse's integer-rounded axes, then measured back via
+    # cv2.minAreaRect the same way both check_coc_procedural.py and the real
+    # calibration do, systematically over/under-reads relative to the (a, b)
+    # actually used to draw it. Pre-divide by the measured bias so the
+    # MEASURED output lands on the real calibration target.
+    a /= shape_profile.get("_length_bias_correction", 1.0)
+    b /= shape_profile.get("_width_bias_correction", 1.0)
     return a, b
+
+
+def _calibrate_rasterization_bias(rng, shape_profile, n_measure=300, n_iters=5):
+    """Coc's own version of generate_rod_dataset.py's bias calibrator, using
+    cv2.ellipse instead of the capsule renderer. Same fixed-point iteration
+    (the two axis biases are coupled through eccentricity, same as rod's
+    width/length coupling through the a/b ratio) -- but measures bias over
+    the ACTUAL sampled (a, b) population each round (varying size and
+    angle), not at one representative mean-sized shape: cocci sit near
+    aspect ratio 1 (mildly elongated, not rod-like), where bias-at-the-mean
+    turned out not to represent the population average well enough to
+    reach a 2% match on width specifically -- averaging the real per-sample
+    bias directly is more robust to that nonlinearity."""
+    length_corr, width_corr = 1.0, 1.0
+    for _ in range(n_iters):
+        probe_profile = dict(shape_profile)
+        probe_profile["_length_bias_correction"] = length_corr
+        probe_profile["_width_bias_correction"] = width_corr
+        len_meas, wid_meas, a_used, b_used = [], [], [], []
+        for _ in range(n_measure):
+            a, b = _sample_cell_ellipse(rng, probe_profile)
+            angle = rng.uniform(0, 180)
+            canvas_size = int(4 * a) + 40
+            canvas = np.zeros((canvas_size, canvas_size), dtype=np.int32)
+            c = canvas_size // 2
+            axes = (max(1, int(round(a))), max(1, int(round(b))))
+            cv2.ellipse(canvas, (c, c), axes, angle, 0.0, 360.0, 1, -1)
+            cm = (canvas == 1).astype(np.uint8)
+            cnts, _ = cv2.findContours(cm, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            if not cnts:
+                continue
+            contour = max(cnts, key=cv2.contourArea)
+            (_, _), (w, h), _ = cv2.minAreaRect(contour)
+            len_meas.append(max(w, h))
+            wid_meas.append(min(w, h))
+            a_used.append(a)
+            b_used.append(b)
+
+        length_corr = float(np.mean(len_meas)) / (2.0 * np.mean(a_used)) if len_meas else length_corr
+        width_corr = float(np.mean(wid_meas)) / (2.0 * np.mean(b_used)) if wid_meas else width_corr
+    return length_corr, width_corr
 
 
 def _cell_radius(cell):
@@ -157,12 +214,24 @@ def step_population(rng, cells, image_size, shape_profile):
     return cells
 
 
+RIM_BOOST_SIGMA = 4.0   # rim brightness = cell_mean + this many background_std above fill -- see generate_rod_dataset.py's render_cells for the same fix, same rationale
+
 def render_cells(rng, cells, profile, image_size=IMAGE_SIZE):
     phot = profile["photometry"]
     psf_sigma = phot["psf_sigma_px_median"] or 1.0
-    snr_db = phot["snr_db_estimate"] if phot["snr_db_estimate"] is not None else 20.0
+    background_mean = phot.get("background_mean", 0.1)
+    background_std = phot.get("background_std", 0.02)
+    cell_mean = phot.get("cell_mean", 1.0)
+    rim_color = float(np.clip(cell_mean + RIM_BOOST_SIGMA * background_std, 0.0, 1.0))
 
-    img = np.zeros((image_size, image_size), dtype=np.float32)
+    # Same fix as generate_rod_dataset.py's render_cells: a black canvas with
+    # cells at full white looked like a different imaging modality entirely
+    # from real phase-contrast/brightfield crops (mid-gray background, cells
+    # only slightly brighter). Render on the real background level with a
+    # thin bright rim per cell (phase-contrast edge halo a uniform fill can't
+    # produce), and draw noise from the real background_std directly instead
+    # of a peak-derived guess that assumed the canvas was black.
+    img = np.full((image_size, image_size), background_mean, dtype=np.float32)
     mask = np.zeros((image_size, image_size), dtype=np.int32)   # cv2 needs signed for fillable draw target
 
     for label, cell in enumerate(cells, start=1):
@@ -171,19 +240,21 @@ def render_cells(rng, cells, profile, image_size=IMAGE_SIZE):
         center = (int(round(px)), int(round(py)))
         axes = (max(1, int(round(a))), max(1, int(round(b))))
         angle = float(cell["angle_deg"])
-        cv2.ellipse(img, center, axes, angle, 0.0, 360.0, 1.0, -1)
+        cv2.ellipse(img, center, axes, angle, 0.0, 360.0, cell_mean, -1)
+        cv2.ellipse(img, center, axes, angle, 0.0, 360.0, rim_color, 1)
         cv2.ellipse(mask, center, axes, angle, 0.0, 360.0, label, -1)
     mask = mask.astype(np.uint16)
 
     blurred = gaussian_filter(img, sigma=psf_sigma)
-    peak = blurred.max() if blurred.max() > 0.0 else 1.0
-    noise_std = peak / (10.0 ** (snr_db / 20.0))
-    noisy = blurred + rng.normal(0.0, noise_std, (image_size, image_size)).astype(np.float32)
+    noisy = blurred + rng.normal(0.0, background_std, (image_size, image_size)).astype(np.float32)
     return np.clip(noisy, 0.0, 1.0), mask
 
 
 def generate_movie(rng, profile, n_frames=FRAMES_PER_MOVIE):
-    shape_profile = profile["shape"]
+    shape_profile = dict(profile["shape"])
+    shape_profile.update(profile["geometry"])   # length_px_mean/width_px_mean -- see _sample_cell_ellipse
+    shape_profile["_length_bias_correction"], shape_profile["_width_bias_correction"] = \
+        _calibrate_rasterization_bias(rng, shape_profile)
     images = np.zeros((n_frames, IMAGE_SIZE, IMAGE_SIZE), dtype=np.float32)
     masks = np.zeros((n_frames, IMAGE_SIZE, IMAGE_SIZE), dtype=np.uint16)
     lineage = {}

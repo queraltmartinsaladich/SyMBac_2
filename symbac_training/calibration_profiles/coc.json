@@ -27,5 +27,15 @@
     "background_std": 0.061341325726248785,
     "cell_mean": 0.492942616849806
   },
+  "density": {
+    "cells_per_crop_mean": 58.02870533099004,
+    "cells_per_crop_std": 51.952670957220384
+  },
+  "orientation": {
+    "near_neighbor_angdiff_deg_mean": 25.33344455554689,
+    "random_pair_angdiff_deg_mean": 32.670758954527436,
+    "n_near_pairs": 184927,
+    "note": "Folded angular difference (axis, not vector -> [0,90deg]) between each cell's orientation and its nearest neighbor's, vs. a random other cell in the same crop as a null baseline (uniform-random orientations average ~45deg). near_neighbor close to random means growth is NOT strongly aligned into colinear chains for this species -- don't force chain alignment in generation without checking this first."
+  },
   "notes": "psf_sigma is a coarse edge-spread proxy (amplitude / (p95 boundary gradient * sqrt(2*pi))), not a fitted optical model -- treat as order-of-magnitude guidance only. snr_db uses generate_dataset.py's own definition (20*log10(peak_signal/noise_std)) so it plugs directly into --species sampling ranges."
 }
